@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scheduling Algorithm Web App</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      body {
+        margin: 0;
+        background: #07111f;
+        color: #f4f7fb;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem 1.25rem 4rem;
+      }
+      .hero {
+        background: linear-gradient(135deg, #0f2d55 0%, #1d5f8b 100%);
+        padding: 2rem;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+      }
+      .grid {
+        display: grid;
+        gap: 1.5rem;
+        grid-template-columns: 1fr 1fr;
+        margin-top: 1.5rem;
+      }
+      .card {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 16px;
+        padding: 1.25rem;
+        backdrop-filter: blur(14px);
+      }
+      input[type="file"] {
+        width: 100%;
+        padding: 0.75rem;
+        border-radius: 10px;
+        background: #0c2037;
+        border: 1px solid #2e638f;
+        color: white;
+      }
+      button {
+        border: none;
+        padding: 0.8rem 1.2rem;
+        border-radius: 999px;
+        background: #32c5ff;
+        color: #08101c;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      button:hover { filter: brightness(1.05); }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 0.85rem;
+      }
+      th, td { padding: 0.7rem; border-bottom: 1px solid rgba(255,255,255,0.12); text-align: left; }
+      .status { margin-top: 0.75rem; color: #9edcff; }
+      .muted { color: #8fb0c8; font-size: 0.95rem; }
+      .mode-row { display: flex; gap: 1rem; flex-wrap: wrap; margin: 0.85rem 0 1rem; }
+      .hidden { display: none; }
+      @media (max-width: 800px) {
+        .grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <section class="hero">
+        <h1>Scheduling Algorithm Web App</h1>
+        <p class="muted">Upload CSV files that match your repository format, run the genetic scheduling solver, and view the best schedule in the browser.</p>
+      </section>
+
+      <div class="grid">
+        <section class="card">
+          <h2>1. Choose a workflow</h2>
+          <div class="mode-row">
+            <label><input type="radio" name="mode" value="class" checked /> Class scheduling</label>
+            <label><input type="radio" name="mode" value="ta" /> TA scheduling</label>
+          </div>
+
+          <div id="classPanel">
+            <p class="muted">Expected files: Students, Teachers, Masterclasses, Group Classes, and Times.</p>
+            <label>Students CSV<input id="studentsFile" type="file" accept=".csv" /></label>
+            <label>Teachers CSV<input id="teachersFile" type="file" accept=".csv" /></label>
+            <label>Masterclasses CSV<input id="masterclassesFile" type="file" accept=".csv" /></label>
+            <label>Group Classes CSV<input id="groupclassesFile" type="file" accept=".csv" /></label>
+            <label>Times CSV<input id="timesFile" type="file" accept=".csv" /></label>
+          </div>
+
+          <div id="taPanel" class="hidden">
+            <p class="muted">Expected files: Lab Schedule and Availability.</p>
+            <label>Lab Schedule CSV<input id="labsFile" type="file" accept=".csv" /></label>
+            <label>Availability CSV<input id="availabilityFile" type="file" accept=".csv" /></label>
+          </div>
+
+          <div style="margin-top: 1rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <button id="runButton">Run scheduling solver</button>
+            <button id="loadSampleButton" type="button">Load sample files</button>
+          </div>
+          <div id="status" class="status">Waiting for files…</div>
+        </section>
+
+        <section class="card">
+          <h2>2. Output</h2>
+          <p class="muted">The solver returns a best-effort schedule with assignments and timing.</p>
+          <table>
+            <thead>
+              <tr id="tableHead"><th>Item</th><th>Assigned</th><th>Time</th><th>Extra</th></tr>
+            </thead>
+            <tbody id="resultsBody"></tbody>
+          </table>
+          <div id="score" class="status">Score: —</div>
+        </section>
+      </div>
+    </div>
+
+    <script type="module">
+      import {
+        parseClassSchedulingData,
+        runClassScheduling,
+        formatClassSchedule,
+        parseTaSchedulingData,
+        runTaScheduling,
+        formatTaSchedule,
+      } from './solver.js';
+
+      const fileInputs = {
+        students: document.getElementById('studentsFile'),
+        teachers: document.getElementById('teachersFile'),
+        masterclasses: document.getElementById('masterclassesFile'),
+        groupclasses: document.getElementById('groupclassesFile'),
+        times: document.getElementById('timesFile'),
+        labs: document.getElementById('labsFile'),
+        availability: document.getElementById('availabilityFile'),
+      };
+
+      const classPanel = document.getElementById('classPanel');
+      const taPanel = document.getElementById('taPanel');
+      const tableHead = document.getElementById('tableHead');
+      const resultsBody = document.getElementById('resultsBody');
+      const statusEl = document.getElementById('status');
+      const scoreEl = document.getElementById('score');
+
+      function setMode(mode) {
+        const isClass = mode === 'class';
+        classPanel.classList.toggle('hidden', !isClass);
+        taPanel.classList.toggle('hidden', isClass);
+        tableHead.innerHTML = isClass
+          ? '<tr><th>Class</th><th>Teacher</th><th>Time</th><th>Level</th></tr>'
+          : '<tr><th>Lab</th><th>TA</th><th>Start</th><th>End</th></tr>';
+      }
+
+      document.querySelectorAll('input[name="mode"]').forEach((radio) => {
+        radio.addEventListener('change', () => setMode(radio.value));
+      });
+      setMode('class');
+
+      async function readFile(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve({ name: file.name, text: reader.result });
+          reader.onerror = () => reject(reader.error);
+          reader.readAsText(file);
+        });
+      }
+
+      async function collectFiles() {
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+        const files = {};
+        const keys = mode === 'class'
+          ? ['students', 'teachers', 'masterclasses', 'groupclasses', 'times']
+          : ['labs', 'availability'];
+        for (const key of keys) {
+          if (fileInputs[key].files && fileInputs[key].files[0]) {
+            files[key] = await readFile(fileInputs[key].files[0]);
+          }
+        }
+        return files;
+      }
+
+      function renderRows(rows, mode) {
+        resultsBody.innerHTML = '';
+        if (!rows.length) {
+          resultsBody.innerHTML = `<tr><td colspan="4">No schedule output yet.</td></tr>`;
+          return;
+        }
+        rows.forEach((row) => {
+          const tr = document.createElement('tr');
+          if (mode === 'class') {
+            tr.innerHTML = `<td>${row.classId}</td><td>${row.teacher}</td><td>${row.time}</td><td>${row.classLevel}</td>`;
+          } else {
+            tr.innerHTML = `<td>${row.lab}</td><td>${row.ta}</td><td>${row.start ?? 'n/a'}</td><td>${row.end ?? 'n/a'}</td>`;
+          }
+          resultsBody.appendChild(tr);
+        });
+      }
+
+      document.getElementById('runButton').addEventListener('click', async () => {
+        try {
+          statusEl.textContent = 'Parsing files…';
+          const mode = document.querySelector('input[name="mode"]:checked').value;
+          const files = await collectFiles();
+          if (mode === 'class') {
+            const data = parseClassSchedulingData(files);
+            const result = runClassScheduling(data);
+            const rows = formatClassSchedule(result, data);
+            renderRows(rows, 'class');
+            scoreEl.textContent = `Score: ${result.score.toFixed(2)}`;
+            statusEl.textContent = `Solved ${rows.length} classes successfully.`;
+          } else {
+            const data = parseTaSchedulingData(files);
+            const result = runTaScheduling(data);
+            const rows = formatTaSchedule(result, data);
+            renderRows(rows, 'ta');
+            scoreEl.textContent = `Score: ${result.score.toFixed(2)}`;
+            statusEl.textContent = `Solved ${rows.length} lab assignments successfully.`;
+          }
+        } catch (error) {
+          statusEl.textContent = error.message;
+          scoreEl.textContent = 'Score: —';
+          console.error(error);
+        }
+      });
+
+      document.getElementById('loadSampleButton').addEventListener('click', async () => {
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+        const fetchText = (name) => fetch(name).then((response) => response.text());
+        try {
+          statusEl.textContent = 'Loading sample data…';
+          if (mode === 'class') {
+            const [students, teachers, masterclasses, groupclasses, times] = await Promise.all([
+              fetchText('Students.csv'),
+              fetchText('Teachers.csv'),
+              fetchText('Masterclasses.csv'),
+              fetchText('Group Class.csv'),
+              fetchText('Times.csv'),
+            ]);
+            const fileMap = {
+              students: new File([students], 'Students.csv', { type: 'text/csv' }),
+              teachers: new File([teachers], 'Teachers.csv', { type: 'text/csv' }),
+              masterclasses: new File([masterclasses], 'Masterclasses.csv', { type: 'text/csv' }),
+              groupclasses: new File([groupclasses], 'Group Class.csv', { type: 'text/csv' }),
+              times: new File([times], 'Times.csv', { type: 'text/csv' }),
+            };
+            Object.entries(fileMap).forEach(([key, file]) => {
+              const dataTransfer = new DataTransfer();
+              dataTransfer.items.add(file);
+              fileInputs[key].files = dataTransfer.files;
+            });
+            statusEl.textContent = 'Sample class files loaded. Click “Run scheduling solver” to generate a schedule.';
+          } else {
+            const [labs, availability] = await Promise.all([
+              fetchText('Lab Schedule.csv'),
+              fetchText('Availability.csv'),
+            ]);
+            const fileMap = {
+              labs: new File([labs], 'Lab Schedule.csv', { type: 'text/csv' }),
+              availability: new File([availability], 'Availability.csv', { type: 'text/csv' }),
+            };
+            Object.entries(fileMap).forEach(([key, file]) => {
+              const dataTransfer = new DataTransfer();
+              dataTransfer.items.add(file);
+              fileInputs[key].files = dataTransfer.files;
+            });
+            statusEl.textContent = 'Sample TA files loaded. Click “Run scheduling solver” to generate a schedule.';
+          }
+        } catch (error) {
+          statusEl.textContent = 'Unable to load samples from the repository.';
+          console.error(error);
+        }
+      });
+    </script>
+  </body>
+</html>
