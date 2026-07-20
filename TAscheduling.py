@@ -45,44 +45,54 @@ def create_individual(availability):
 
 def fitness(labs, schedule):
     d = {}
+
     for i in range(len(schedule)):
-        TA = schedule[i][1] #assigned schedule[i][1] to a common variable 
-        if TA not in d: #if the TA wasn't already in the dictionary as a key, add it
-            d[TA] = [i]
-        else:
-            d[TA].append(i) #otherwise, append the value into the existing key
-    # total = 0 all of this tested to make sure that tht etotal lab # was 40
-    # l = []
-    # for k in d:
-    #     total += len(d[k])
-    #     l += d[k]
-    for k in d: #for key in dictionary
-        assigned = d[k] #this is the list of values for the given key
-        for i in assigned: #nested loop
-            for j in assigned: #i and j run through the same code
-                if i != j: #so if they're not equal, test for overlap
-                    start1 = labs[i][2]
-                    end1 = labs[i][3]
-                    start2 = labs[j][2]
-                    end2 = labs[j][3]
-                    if overlap(start1, end1, start2, end2):
-                        return 0 #low fitness function = unfit
-        dev = 0
-        for k in d:
-            actual = len(d[k]) #actual length of value for key in dict
-            dev += abs(mean - actual) 
-            #print(actual, dev)
-        return ta_total/dev #ta_total bc finds average among the number - inconsistent if diff # of ppl       
+        ta = schedule[i][1]
+        if ta not in d:
+            d[ta] = []
+        d[ta].append(i)
+
+    # Check for overlapping labs
+    for ta in d:
+        assigned = d[ta]
+        for i in range(len(assigned)):
+            for j in range(i + 1, len(assigned)):
+                lab1 = assigned[i]
+                lab2 = assigned[j]
+
+                if labs[lab1][1] == labs[lab2][1]:      # same day
+                    if overlap(
+                        labs[lab1][2], labs[lab1][3],
+                        labs[lab2][2], labs[lab2][3]
+                    ):
+                        return 0
+
+    # Compute balance after ALL overlap checks
+    dev = 0 
+
+    for ta in range(1, ta_total + 1):
+        actual = len(d.get(ta, []))   # 0 if TA has no labs
+        dev += abs(mean - actual)
+
+    if dev == 0:
+        return float("inf")
+
+    return lab_total / dev   
 
 def parent(P, TSIZE):
     v = random.sample(P, TSIZE)
-    max_fit = fitness(labs,v[0])
-    max_i = v[0]
-    for i in range(TSIZE):
-        if fitness(labs,v[i]) > max_fit:
-            max_fit = fitness(labs,v[i])
-            max_i = v[i]
-    return max_i 
+
+    best = v[0]
+    best_fit = fitness(labs, best)
+
+    for individual in v:
+        fit = fitness(labs, individual)
+
+        if fit > best_fit:
+            best = individual
+            best_fit = fit
+
+    return best
 
 def crossover(parent1, parent2):
     child = []
@@ -119,8 +129,8 @@ lab_total = len(labs) #this counts the number of rows in labs to know total
 ta_total = len(availability[0]) - 1 #availability[0] is the first row minus "lab name"
 mean = lab_total/ta_total # equal to 1.739
 POPULATION_SIZE = 1500 #number of schedules in population
-MUTATION_RATE = 0.01 #probability of mutation
-GENERATIONS = 1000 #max number of generations 
+MUTATION_RATE = 0.1 #probability of mutation
+GENERATIONS = 100 #max number of generations 
 TSIZE = 5
 
 for row in labs:
@@ -143,19 +153,23 @@ f1 = 0
 for step in range(GENERATIONS):
     #f = mutation(crossover(parent(P, TSIZE), parent(P, TSIZE)))
     f,w = bestfitness(P) #if two things are being returned, format like this to assign the things
-    if step % 100 == 0:
-        print(step)
-        if f - f1 < 0.00000000000001:
-            print(step+1)
-            break
-        f1 = f
-    #print('THIS IS STEP', step)
+    # if step % 100 == 0:
+    #     print(step)
+    #     if f - f1 < 0.00000000000001:
+    #         print(step+1)
+    #         break
+    #     f1 = f
+    print('THIS IS STEP', step)
     #print(w)
     P2 = []
+
     for i in range(POPULATION_SIZE):
         parent1 = parent(P, TSIZE)
         parent2 = parent(P, TSIZE)
-        P2.append(mutation(crossover(parent1, parent2)))
+
+        child = mutation(crossover(parent1, parent2))
+        P2.append(child)
+
     P = P2
 from operator import itemgetter
 sorted_w = sorted(w, key=itemgetter(1))
