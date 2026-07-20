@@ -122,15 +122,26 @@
       </div>
     </div>
 
-    <script type="module">
-      import {
-        parseClassSchedulingData,
-        runClassScheduling,
-        formatClassSchedule,
-        parseTaSchedulingData,
-        runTaScheduling,
-        formatTaSchedule,
-      } from './solver.js';
+    <script>
+      let pyodideReady = null;
+
+      async function ensurePyodide() {
+        if (pyodideReady) {
+          return pyodideReady;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js';
+        document.head.appendChild(script);
+        await new Promise((resolve, reject) => {
+          script.onload = resolve;
+          script.onerror = reject;
+        });
+        const pyodide = await window.loadPyodide({ indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/' });
+        const solverCode = await fetch('./solver.py').then((response) => response.text());
+        await pyodide.runPythonAsync(solverCode);
+        pyodideReady = pyodide;
+        return pyodide;
+      }
 
       const fileInputs = {
         students: document.getElementById('studentsFile'),
@@ -205,23 +216,24 @@
 
       document.getElementById('runButton').addEventListener('click', async () => {
         try {
-          statusEl.textContent = 'Parsing files…';
+          statusEl.textContent = 'Loading Python solver…';
+          const pyodide = await ensurePyodide();
           const mode = document.querySelector('input[name="mode"]:checked').value;
           const files = await collectFiles();
           if (mode === 'class') {
-            const data = parseClassSchedulingData(files);
-            const result = runClassScheduling(data);
-            const rows = formatClassSchedule(result, data);
-            renderRows(rows, 'class');
-            scoreEl.textContent = `Score: ${result.score.toFixed(2)}`;
-            statusEl.textContent = `Solved ${rows.length} classes successfully.`;
+            const payload = JSON.stringify(files);
+            const resultText = pyodide.globals.get('solve_class_from_files')(payload);
+            const result = JSON.parse(resultText);
+            renderRows(result.rows, 'class');
+            scoreEl.textContent = `Score: ${Number(result.score).toFixed(2)}`;
+            statusEl.textContent = `Solved ${result.rows.length} classes successfully.`;
           } else {
-            const data = parseTaSchedulingData(files);
-            const result = runTaScheduling(data);
-            const rows = formatTaSchedule(result, data);
-            renderRows(rows, 'ta');
-            scoreEl.textContent = `Score: ${result.score.toFixed(2)}`;
-            statusEl.textContent = `Solved ${rows.length} lab assignments successfully.`;
+            const payload = JSON.stringify(files);
+            const resultText = pyodide.globals.get('solve_ta_from_files')(payload);
+            const result = JSON.parse(resultText);
+            renderRows(result.rows, 'ta');
+            scoreEl.textContent = `Score: ${Number(result.score).toFixed(2)}`;
+            statusEl.textContent = `Solved ${result.rows.length} lab assignments successfully.`;
           }
         } catch (error) {
           statusEl.textContent = error.message;
