@@ -46,13 +46,16 @@ def create_individual(availability):
 def fitness(labs, schedule):
     d = {}
 
+    # Build dictionary: TA -> list of assigned labs
     for i in range(len(schedule)):
         ta = schedule[i][1]
         if ta not in d:
             d[ta] = []
         d[ta].append(i)
 
-    # Check for overlapping labs
+    # Count conflicts
+    conflicts = 0
+
     for ta in d:
         assigned = d[ta]
         for i in range(len(assigned)):
@@ -60,24 +63,27 @@ def fitness(labs, schedule):
                 lab1 = assigned[i]
                 lab2 = assigned[j]
 
-                if labs[lab1][1] == labs[lab2][1]:      # same day
+                if labs[lab1][1] == labs[lab2][1]:
                     if overlap(
                         labs[lab1][2], labs[lab1][3],
                         labs[lab2][2], labs[lab2][3]
                     ):
-                        return 0
+                        conflicts += 1
 
-    # Compute balance after ALL overlap checks
-    dev = 0 
+    # Count unused TAs and workload imbalance
+    unused = 0
+    dev = 0
 
     for ta in range(1, ta_total + 1):
-        actual = len(d.get(ta, []))   # 0 if TA has no labs
+        actual = len(d.get(ta, []))
+
+        if actual == 0:
+            unused += 1
+
         dev += abs(mean - actual)
 
-    if dev == 0:
-        return float("inf")
-
-    return lab_total / dev   
+    # Higher is better
+    return 1000 - 100 * conflicts - 50 * unused - dev  
 
 def parent(P, TSIZE):
     v = random.sample(P, TSIZE)
@@ -148,6 +154,10 @@ for row in availability:
     #print(row)
 
 P = [create_individual(availability) for _ in range(POPULATION_SIZE)]
+print("Population size:", len(P))
+
+for i in range(5):
+    print(fitness(labs, P[i]))
 
 f1 = 0
 for step in range(GENERATIONS):
@@ -160,6 +170,7 @@ for step in range(GENERATIONS):
     #         break
     #     f1 = f
     print('THIS IS STEP', step)
+
     #print(w)
     P2 = []
 
