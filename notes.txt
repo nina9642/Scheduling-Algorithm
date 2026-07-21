@@ -7,6 +7,13 @@ Then go to
 http://localhost:8000
 
 
+This is the actual website URL:
+https://nina9642.github.io/Scheduling-Algorithm/
+
+
+---
+
+
 git branch -m master main
 git fetch origin
 git branch -u origin/main main
