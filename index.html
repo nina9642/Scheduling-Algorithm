@@ -198,17 +198,8 @@ Lab Name,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W
           script.onerror = reject;
         });
         const pyodide = await window.loadPyodide({ indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/' });
-        const moduleFiles = [
-          'violinscheduling.py',
-          'TAscheduling.py',
-        ];
-        await Promise.all(moduleFiles.map(async (name) => {
-          const source = await fetch(name).then((response) => response.text());
-          pyodide.FS.writeFile(`/tmp/${name}`, source);
-        }));
-        await pyodide.runPythonAsync(`import sys\nif '/tmp' not in sys.path: sys.path.insert(0, '/tmp')`);
-        const wrapperCode = await fetch('./solver_wrapper.py').then((response) => response.text());
-        await pyodide.runPythonAsync(wrapperCode);
+        const solverCode = await fetch('./solver.py').then((response) => response.text());
+        await pyodide.runPythonAsync(solverCode);
         pyodideReady = pyodide;
         return pyodide;
       }
