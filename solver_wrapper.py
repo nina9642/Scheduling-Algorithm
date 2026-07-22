@@ -33,14 +33,25 @@ def _create_scheduling1_stub():
 
 
 def _load_module_from_text(name, path):
-    if not os.path.exists(path):
-        path = os.path.join(os.path.dirname(__file__), f'{name}.py')
-    if not os.path.exists(path):
-        raise FileNotFoundError(f'Module source not found: {path}')
-    spec = importlib.util.spec_from_file_location(name, path)
+    if os.path.exists(path):
+        source_path = path
+    else:
+        cwd_path = os.path.join(os.getcwd(), f'{name}.py')
+        if os.path.exists(cwd_path):
+            source_path = cwd_path
+        else:
+            base = os.getcwd()
+            if '__file__' in globals():
+                base = os.path.dirname(__file__)
+            alt_path = os.path.join(base, f'{name}.py')
+            if os.path.exists(alt_path):
+                source_path = alt_path
+            else:
+                raise FileNotFoundError(f'Module source not found: {path} or {cwd_path} or {alt_path}')
+    spec = importlib.util.spec_from_file_location(name, source_path)
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module
-    source = open(path, 'r', encoding='utf-8').read()
+    source = open(source_path, 'r', encoding='utf-8').read()
     trimmed_source = _trim_python_script(source)
     if name == 'violinscheduling':
         _create_scheduling1_stub()
