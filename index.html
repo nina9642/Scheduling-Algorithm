@@ -87,11 +87,12 @@
           </div>
 
           <div id="classPanel">
-            <p class="muted">Expected files: Students, Teachers, Masterclasses, Group Classes, and Times.</p>
+            <p class="muted">Expected files: Students, Teachers, Masterclasses, Group Classes, Orchestra, and Times.</p>
             <label>Students CSV<input id="studentsFile" type="file" accept=".csv" /></label>
             <label>Teachers CSV<input id="teachersFile" type="file" accept=".csv" /></label>
             <label>Masterclasses CSV<input id="masterclassesFile" type="file" accept=".csv" /></label>
             <label>Group Classes CSV<input id="groupclassesFile" type="file" accept=".csv" /></label>
+            <label>Orchestra CSV<input id="orchestraFile" type="file" accept=".csv" /></label>
             <label>Times CSV<input id="timesFile" type="file" accept=".csv" /></label>
           </div>
 
@@ -120,6 +121,66 @@
           <div id="score" class="status">Score: —</div>
         </section>
       </div>
+      <section class="card" style="margin-top: 1rem;">
+        <h2>3. CSV format examples</h2>
+        <p class="muted">Use these example headers and columns to create your own files.</p>
+        <div style="display: grid; gap: 1rem;">
+          <div>
+            <strong>Class scheduling files</strong>
+            <pre style="background: rgba(255,255,255,0.05); padding: 0.9rem; border-radius: 12px; overflow-x: auto;">
+Students.csv
+ID,Name,Book,Piece
+1,Jason Cao,8,V0812
+2,Kaitlyn Murray,8,V0805
+
+Teachers.csv
+ID,Name,Book
+1,Tal,8
+2,Kirsten,7
+
+Masterclasses.csv
+Group ID,Level,Student 1,Student 2,Student 3,Student 4
+1,8,1,2,,
+2,7,3,4,,
+
+Group Class.csv
+ID,Book 1,Book 2
+22,8,7
+23,6,5
+
+Orchestra.csv
+ID,Book 1,Book 2,Book 3
+27,8,7,6
+28,5,4,
+
+Times.csv
+ID,Time
+1,9
+2,10
+3,11
+4,1
+5,2
+6,3
+            </pre>
+          </div>
+          <div>
+            <strong>TA scheduling files</strong>
+            <pre style="background: rgba(255,255,255,0.05); padding: 0.9rem; border-radius: 12px; overflow-x: auto;">
+Lab Schedule.csv
+Lab Name,Day,Start,End
+001L,3,8:00,9:50
+002L,3,10:00,11:50
+003L,3,15:15,17:05
+
+Availability.csv
+Lab Name,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W
+001L,x,,x,x,,x,,x,,,,,,x,,,,x,,x,,,x
+002L,x,,,,,,x,,,,,,,x,x,,,,,,,
+003L,,x,,,x,,,,x,,x,,x,,,,,,,x,,,x
+            </pre>
+          </div>
+        </div>
+      </section>
     </div>
 
     <script>
@@ -137,8 +198,17 @@
           script.onerror = reject;
         });
         const pyodide = await window.loadPyodide({ indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/' });
-        const solverCode = await fetch('./solver.py').then((response) => response.text());
-        await pyodide.runPythonAsync(solverCode);
+        const moduleFiles = [
+          'violinscheduling.py',
+          'TAscheduling.py',
+        ];
+        await Promise.all(moduleFiles.map(async (name) => {
+          const source = await fetch(name).then((response) => response.text());
+          pyodide.FS.writeFile(`/tmp/${name}`, source);
+        }));
+        await pyodide.runPythonAsync(`import sys\nif '/tmp' not in sys.path: sys.path.insert(0, '/tmp')`);
+        const wrapperCode = await fetch('./solver_wrapper.py').then((response) => response.text());
+        await pyodide.runPythonAsync(wrapperCode);
         pyodideReady = pyodide;
         return pyodide;
       }
@@ -148,6 +218,7 @@
         teachers: document.getElementById('teachersFile'),
         masterclasses: document.getElementById('masterclassesFile'),
         groupclasses: document.getElementById('groupclassesFile'),
+        orchestra: document.getElementById('orchestraFile'),
         times: document.getElementById('timesFile'),
         labs: document.getElementById('labsFile'),
         availability: document.getElementById('availabilityFile'),
@@ -187,7 +258,7 @@
         const mode = document.querySelector('input[name="mode"]:checked').value;
         const files = {};
         const keys = mode === 'class'
-          ? ['students', 'teachers', 'masterclasses', 'groupclasses', 'times']
+          ? ['students', 'teachers', 'masterclasses', 'groupclasses', 'orchestra', 'times']
           : ['labs', 'availability'];
         for (const key of keys) {
           if (fileInputs[key].files && fileInputs[key].files[0]) {
@@ -248,11 +319,12 @@
         try {
           statusEl.textContent = 'Loading sample data…';
           if (mode === 'class') {
-            const [students, teachers, masterclasses, groupclasses, times] = await Promise.all([
+            const [students, teachers, masterclasses, groupclasses, orchestra, times] = await Promise.all([
               fetchText('Students.csv'),
               fetchText('Teachers.csv'),
               fetchText('Masterclasses.csv'),
               fetchText('Group Class.csv'),
+              fetchText('Orchestra.csv'),
               fetchText('Times.csv'),
             ]);
             const fileMap = {
@@ -260,6 +332,7 @@
               teachers: new File([teachers], 'Teachers.csv', { type: 'text/csv' }),
               masterclasses: new File([masterclasses], 'Masterclasses.csv', { type: 'text/csv' }),
               groupclasses: new File([groupclasses], 'Group Class.csv', { type: 'text/csv' }),
+              orchestra: new File([orchestra], 'Orchestra.csv', { type: 'text/csv' }),
               times: new File([times], 'Times.csv', { type: 'text/csv' }),
             };
             Object.entries(fileMap).forEach(([key, file]) => {
