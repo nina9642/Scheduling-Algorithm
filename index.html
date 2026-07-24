@@ -310,8 +310,8 @@ os.chdir('/tmp')
         rows.forEach((row) => {
           const tr = document.createElement('tr');
           if (mode === 'class') {
-            const studentCount = Array.isArray(row.students) ? row.students.length : 'n/a';
-            tr.innerHTML = `<td>${row.classId}</td><td>${row.teacher}</td><td>${row.time}</td><td>${studentCount}</td>`;
+            const students = Array.isArray(row.students) ? row.students.join(", ") : 'n/a';
+            tr.innerHTML = `<td>${row.classId}</td><td>${row.teacher}</td><td>${row.time}</td><td>${students}</td>`;
           } else {
             tr.innerHTML = `<td>${row.lab}</td><td>${row.ta}</td><td>${row.start ?? 'n/a'}</td><td>${row.end ?? 'n/a'}</td>`;
           }
