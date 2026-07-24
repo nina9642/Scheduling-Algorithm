@@ -1,21 +1,15 @@
 import random
 import csv
 
-def read_csv_to_2d_list(file_path):
+def read_csv(file_path, skip_header=True):
     result = []
-    try:
-        with open(file_path, 'r', newline='', encoding='utf-8') as file:
-            csv_reader = csv.reader(file)
-            next(csv_reader)  # Skip the first row (header)
-            for row in csv_reader:
-                result.append(row)
-        return result
-    except FileNotFoundError:
-        print(f"Error: File '{file_path}' not found")
-        return []
-    except Exception as e:
-        print(f"Error reading CSV: {e}")
-        return []
+    with open(file_path, newline='', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        if skip_header:
+            next(reader)
+        for row in reader:
+            result.append(row)
+    return result
     
 def str_to_int(t):
     t = t.split(':')
@@ -31,15 +25,15 @@ def overlap(start1, end1, start2, end2):
 
 def create_individual(availability):
     schedule = []
-    for row in availability:
+    ta_names = availability[0]
+    for row in availability[1:]:
         l = []
         for i in range(1, len(row)):
             if row[i] == 1:
-                l.append(i)
+                l.append(ta_names[i])
         #print(l)
         rc = random.choice(l)
         #print('rc', rc)
-        #print(l)
         schedule.append((row[0], rc))
     return schedule #rows made up of lab, then a TA assigned to each in tuples
 
@@ -74,7 +68,7 @@ def fitness(labs, schedule):
     unused = 0
     dev = 0
 
-    for ta in range(1, ta_total + 1):
+    for ta in availability[0][1:]:
         actual = len(d.get(ta, []))
 
         if actual == 0:
@@ -111,11 +105,15 @@ def crossover(parent1, parent2):
     return child
 
 def mutation(child):
+    ta_names = availability[0]
+
     for i in range(len(child)):
         if random.random() < MUTATION_RATE:
-            l = [a for a in range(len(availability[i])) if availability[i][a] == 1]
-            rc = random.choice(l)
-            child[i] = (child[i][0],rc)
+            choices = [
+                ta_names[j]
+                for j in range(1, len(availability[i + 1]))
+                if availability[i + 1][j] == 1]
+            child[i] = (child[i][0], random.choice(choices))
     return child
 
 def bestfitness(P):
@@ -129,8 +127,8 @@ def bestfitness(P):
 
 file_path = 'Lab Schedule.csv'
 file_path2 = 'Availability.csv'
-labs = read_csv_to_2d_list(file_path)
-availability = read_csv_to_2d_list(file_path2)
+labs = read_csv(file_path)                     # skip header
+availability = read_csv(file_path2, False)
 lab_total = len(labs) #this counts the number of rows in labs to know total
 ta_total = len(availability[0]) - 1 #availability[0] is the first row minus "lab name"
 mean = lab_total/ta_total # equal to 1.739
@@ -145,7 +143,7 @@ for row in labs:
     row[3] = str_to_int(row[3])
     #print(row)
 
-for row in availability:
+for row in availability[1:]:
     for i in range(1,len(row)):
         if row[i] == '':
             row[i] = 0
@@ -154,12 +152,13 @@ for row in availability:
     #print(row)
 
 P = [create_individual(availability) for _ in range(POPULATION_SIZE)]
-print("Population size:", len(P))
+#print("Population size:", len(P))
 
-for i in range(5):
-    print(fitness(labs, P[i]))
+# for i in range(5):
+#     print(fitness(labs, P[i]))
 
 f1 = 0
+
 for step in range(GENERATIONS):
     #f = mutation(crossover(parent(P, TSIZE), parent(P, TSIZE)))
     f,w = bestfitness(P) #if two things are being returned, format like this to assign the things
@@ -182,9 +181,10 @@ for step in range(GENERATIONS):
         P2.append(child)
 
     P = P2
+
 from operator import itemgetter
 sorted_w = sorted(w, key=itemgetter(1))
 for row in sorted_w:
     print(row[0], row[1])
 print(f)
-#print(availability)
+
