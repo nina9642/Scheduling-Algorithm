@@ -84,6 +84,79 @@
       .muted { color: #8fb0c8; font-size: 0.95rem; }
       .mode-row { display: flex; gap: 1rem; flex-wrap: wrap; margin: 0.85rem 0 1rem; }
       .hidden { display: none; }
+      .guide { margin-top: 1rem; display: grid; gap: 1.25rem; }
+      .guide h3 { margin: 0 0 0.5rem; font-size: 1.1rem; }
+      .guide h4 { margin: 0 0 0.45rem; font-size: 1rem; color: #d8ecff; }
+      .guide p, .guide li { line-height: 1.6; }
+      .guide ol, .guide ul { margin: 0.35rem 0 0; padding-left: 1.25rem; }
+      .guide-steps {
+        display: grid;
+        gap: 0.65rem;
+        padding: 0;
+        list-style: none;
+      }
+      .guide-steps li {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 0.85rem 1rem;
+      }
+      .guide-steps strong { color: #d8ecff; }
+      .example-block {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 1rem;
+      }
+      .example-title {
+        display: inline-block;
+        margin-bottom: 0.55rem;
+        padding: 0.2rem 0.65rem;
+        border-radius: 999px;
+        background: rgba(50, 197, 255, 0.18);
+        color: #9edcff;
+        font-size: 0.85rem;
+        font-weight: 700;
+      }
+      .column-legend {
+        display: grid;
+        gap: 0.45rem;
+        margin: 0.75rem 0 0;
+        padding: 0;
+        list-style: none;
+      }
+      .column-legend li {
+        padding: 0.55rem 0.75rem;
+        border-radius: 10px;
+        background: rgba(7, 17, 31, 0.55);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .column-legend code {
+        color: #5eead4;
+        font-weight: 700;
+      }
+      .csv-sample {
+        margin-top: 0.75rem;
+        padding: 0.85rem;
+        border-radius: 10px;
+        background: rgba(7, 17, 31, 0.75);
+        overflow-x: auto;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.92rem;
+        line-height: 1.55;
+        white-space: pre;
+      }
+      .csv-row-label {
+        color: #8fb0c8;
+        font-size: 0.82rem;
+        margin-top: 0.45rem;
+      }
+      .tip-box {
+        padding: 0.9rem 1rem;
+        border-radius: 12px;
+        background: rgba(94, 234, 212, 0.08);
+        border: 1px solid rgba(94, 234, 212, 0.18);
+      }
       @media (max-width: 800px) {
         .grid { grid-template-columns: 1fr; }
       }
@@ -93,7 +166,7 @@
     <div class="container">
       <section class="hero">
         <h1>Scheduling Algorithm Web App</h1>
-        <p class="muted">Upload CSV files that match your repository format, run the genetic scheduling solver, and view the best schedule in the browser.</p>
+        <p class="muted">Upload your schedule data as CSV files, run the solver, and get a suggested schedule in seconds. New to CSV files or genetic algorithms? Scroll down for step-by-step instructions and examples.</p>
       </section>
 
       <div class="grid">
@@ -105,7 +178,7 @@
           </div>
 
           <div id="classPanel">
-            <p class="muted">Expected files: Students, Teachers, Masterclasses, Group Classes, Orchestra, and Times.</p>
+            <p class="muted">Expected files: Students, Teachers, Masterclasses, Group Classes, Orchestra, and Times. See section 6 below for column definitions and examples.</p>
             <label>Students CSV<input id="studentsFile" type="file" accept=".csv" /></label>
             <label>Teachers CSV<input id="teachersFile" type="file" accept=".csv" /></label>
             <label>Masterclasses CSV<input id="masterclassesFile" type="file" accept=".csv" /></label>
@@ -115,7 +188,7 @@
           </div>
 
           <div id="taPanel" class="hidden">
-            <p class="muted">Expected files: Lab Schedule and Availability.</p>
+            <p class="muted">Expected files: Lab Schedule and Availability. See section 6 below for column definitions and examples.</p>
             <label>Lab Schedule CSV<input id="labsFile" type="file" accept=".csv" /></label>
             <label>Availability CSV<input id="availabilityFile" type="file" accept=".csv" /></label>
           </div>
@@ -146,63 +219,185 @@
           <div id="score" class="status">Score: —</div>
         </section>
       </div>
+
       <section class="card" style="margin-top: 1rem;">
-        <h2>3. CSV format examples</h2>
-        <p class="muted">Use these example headers and columns to create your own files.</p>
-        <div style="display: grid; gap: 1rem;">
-          <div>
-            <strong>Class scheduling files</strong>
-            <pre style="background: rgba(255,255,255,0.05); padding: 0.9rem; border-radius: 12px; overflow-x: auto;">
-Students.csv
-ID,Name,Book,Piece
+        <h2>3. How to use this app</h2>
+        <div class="guide">
+          <ol class="guide-steps">
+            <li><strong>Pick a workflow.</strong> Choose <em>Class scheduling</em> for teachers, students, and time slots, or <em>TA scheduling</em> for lab sections and teaching assistants.</li>
+            <li><strong>Prepare your CSV files.</strong> Each file is a simple spreadsheet saved as <code>.csv</code>. See sections 4 and 5 below for what each column means.</li>
+            <li><strong>Upload the files</strong> using the file pickers above, or click <em>Load sample files</em> to try the built-in examples first.</li>
+            <li><strong>Click Run scheduling solver.</strong> A progress bar will count through the generations (for example, 1/100, 2/100, and so on).</li>
+            <li><strong>Read the output table.</strong> The solver shows its best schedule and a score. Higher scores usually mean fewer conflicts and a more balanced assignment.</li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="card" style="margin-top: 1rem;">
+        <h2>4. What is a CSV file?</h2>
+        <div class="guide">
+          <p>A CSV (<strong>C</strong>omma-<strong>S</strong>eparated <strong>V</strong>alues) file is a plain-text spreadsheet. Programs like Excel, Google Sheets, and Numbers can open and save them.</p>
+          <div class="tip-box">
+            <p><strong>Commas separate columns.</strong> Each comma marks the end of one cell and the start of the next.</p>
+            <p style="margin-top: 0.65rem;"><strong>Example:</strong> <code>1,Jason Cao,8,V0812</code> means four cells in one row:</p>
+            <ul style="margin-top: 0.5rem;">
+              <li>Cell 1: <code>1</code></li>
+              <li>Cell 2: <code>Jason Cao</code></li>
+              <li>Cell 3: <code>8</code></li>
+              <li>Cell 4: <code>V0812</code></li>
+            </ul>
+          </div>
+          <ul style="margin-top: 1rem;">
+            <li><strong>First row = column names.</strong> The top row tells the app what each column represents. Do not delete it.</li>
+            <li><strong>One row = one record.</strong> Each line after the header is one student, teacher, class, lab, or time slot.</li>
+            <li><strong>Empty cells are okay.</strong> If a value is missing, leave that spot blank. In the file this looks like two commas in a row, like <code>3,4,,</code>.</li>
+            <li><strong>Save as CSV, not Excel.</strong> When exporting from a spreadsheet app, choose “CSV” or “Comma Separated Values.”</li>
+            <li><strong>Keep column order the same</strong> as in the examples below unless you are sure the app supports your headers.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="card" style="margin-top: 1rem;">
+        <h2>5. How the genetic algorithm works</h2>
+        <div class="guide">
+          <p>This app uses a <strong>genetic algorithm</strong>, a search method inspired by evolution in nature. Instead of trying every possible schedule by hand, the computer creates many candidate schedules, keeps the good ones, and improves them over time.</p>
+          <ol>
+            <li><strong>Start with random schedules.</strong> The solver builds a large population of possible assignments (for example, which teacher gets which class, or which TA covers which lab).</li>
+            <li><strong>Score each schedule.</strong> Every candidate gets a fitness score. Schedules with overlapping assignments, unavailable people, or uneven workloads score lower.</li>
+            <li><strong>Keep the best candidates.</strong> The highest-scoring schedules are selected to “reproduce” into the next generation.</li>
+            <li><strong>Mix and mutate.</strong> The solver combines parts of good schedules and makes small random changes to explore new options.</li>
+            <li><strong>Repeat for 100 generations.</strong> Each generation tries to beat the last one. The progress bar shows where you are, such as 37/100.</li>
+            <li><strong>Return the best result found.</strong> When the run finishes, the app displays the highest-scoring schedule it discovered. It may not be perfect, but it is the best option found in the time allowed.</li>
+          </ol>
+          <p class="muted" style="margin-top: 0.75rem;">Because the process includes randomness, running the solver again can produce a slightly different schedule with a similar score.</p>
+        </div>
+      </section>
+
+      <section class="card" style="margin-top: 1rem;">
+        <h2>6. CSV file reference and examples</h2>
+        <p class="muted">Each example below shows the file name, what every column means, and a sample row with labels.</p>
+
+        <div id="classGuide" class="guide">
+          <h3>Class scheduling files</h3>
+          <p>You need all six files below. Student IDs used in class files must match the IDs in <code>Students.csv</code>. Teacher IDs must match <code>Teachers.csv</code>.</p>
+
+          <div class="example-block">
+            <span class="example-title">Students.csv</span>
+            <p class="muted">One row per student.</p>
+            <ul class="column-legend">
+              <li><code>ID</code> — unique student number used everywhere else in your files</li>
+              <li><code>Name</code> — student’s full name (for your records; the solver mainly uses the ID)</li>
+              <li><code>Book</code> — skill level or book number (higher numbers usually mean more advanced)</li>
+              <li><code>Piece</code> — optional piece code or name</li>
+            </ul>
+            <div class="csv-sample">ID,Name,Book,Piece
 1,Jason Cao,8,V0812
-2,Kaitlyn Murray,8,V0805
+2,Kaitlyn Murray,8,V0805</div>
+            <p class="csv-row-label">Row 1 above means: student ID <strong>1</strong>, named <strong>Jason Cao</strong>, book level <strong>8</strong>, piece <strong>V0812</strong>.</p>
+          </div>
 
-Teachers.csv
-ID,Name,Book
+          <div class="example-block">
+            <span class="example-title">Teachers.csv</span>
+            <p class="muted">One row per teacher.</p>
+            <ul class="column-legend">
+              <li><code>ID</code> — unique teacher number</li>
+              <li><code>Name</code> — teacher’s name</li>
+              <li><code>Book</code> — highest book level that teacher can teach</li>
+            </ul>
+            <div class="csv-sample">ID,Name,Book
 1,Tal,8
-2,Kirsten,7
+2,Kirsten,7</div>
+            <p class="csv-row-label">Row 1 above means: teacher ID <strong>1</strong>, named <strong>Tal</strong>, can teach up to book level <strong>8</strong>.</p>
+          </div>
 
-Masterclasses.csv
-Group ID,Level,Student 1,Student 2,Student 3,Student 4
+          <div class="example-block">
+            <span class="example-title">Masterclasses.csv</span>
+            <p class="muted">Small group classes with up to four students.</p>
+            <ul class="column-legend">
+              <li><code>Group ID</code> — unique class ID (appears in the output table)</li>
+              <li><code>Level</code> — required book level for this class</li>
+              <li><code>Student 1</code> to <code>Student 4</code> — student IDs from <code>Students.csv</code>; leave unused slots blank</li>
+            </ul>
+            <div class="csv-sample">Group ID,Level,Student 1,Student 2,Student 3,Student 4
 1,8,1,2,,
-2,7,3,4,,
+2,7,3,4,,</div>
+            <p class="csv-row-label">Row 1 above means: masterclass ID <strong>1</strong>, level <strong>8</strong>, with students <strong>1</strong> and <strong>2</strong>. The two empty commas at the end mean slots 3 and 4 are unused.</p>
+          </div>
 
-Group Class.csv
-ID,Book 1,Book 2
+          <div class="example-block">
+            <span class="example-title">Group Class.csv</span>
+            <p class="muted">Larger shared classes defined by book levels.</p>
+            <ul class="column-legend">
+              <li><code>ID</code> — unique class ID</li>
+              <li><code>Book 1</code>, <code>Book 2</code> — book levels included in this group; leave extra columns blank if unused</li>
+            </ul>
+            <div class="csv-sample">ID,Book 1,Book 2
 22,8,7
-23,6,5
+23,6,5</div>
+            <p class="csv-row-label">Row 1 above means: group class ID <strong>22</strong> covers book levels <strong>8</strong> and <strong>7</strong>.</p>
+          </div>
 
-Orchestra.csv
-ID,Book 1,Book 2,Book 3
+          <div class="example-block">
+            <span class="example-title">Orchestra.csv</span>
+            <p class="muted">Orchestra sections by book level.</p>
+            <ul class="column-legend">
+              <li><code>ID</code> — unique orchestra class ID</li>
+              <li><code>Book 1</code>, <code>Book 2</code>, <code>Book 3</code> — book levels in this orchestra; leave unused book columns blank</li>
+            </ul>
+            <div class="csv-sample">ID,Book 1,Book 2,Book 3
 27,8,7,6
-28,5,4,
+28,5,4,</div>
+            <p class="csv-row-label">Row 1 above means: orchestra ID <strong>27</strong> includes book levels <strong>8</strong>, <strong>7</strong>, and <strong>6</strong>.</p>
+          </div>
 
-Times.csv
-ID,Time
+          <div class="example-block">
+            <span class="example-title">Times.csv</span>
+            <p class="muted">Available time slots during the day.</p>
+            <ul class="column-legend">
+              <li><code>ID</code> — unique time-slot number stored in the schedule</li>
+              <li><code>Time</code> — hour label shown in the output (for example, 9 means 9:00)</li>
+            </ul>
+            <div class="csv-sample">ID,Time
 1,9
 2,10
-3,11
-4,1
-5,2
-6,3
-            </pre>
+3,11</div>
+            <p class="csv-row-label">Row 1 above means: time slot ID <strong>1</strong> is labeled <strong>9</strong> in the finished schedule.</p>
           </div>
-          <div>
-            <strong>TA scheduling files</strong>
-            <pre style="background: rgba(255,255,255,0.05); padding: 0.9rem; border-radius: 12px; overflow-x: auto;">
-Lab Schedule.csv
-Lab Name,Day,Start,End
+        </div>
+
+        <div id="taGuide" class="guide hidden">
+          <h3>TA scheduling files</h3>
+          <p>You need both files below. Every lab in <code>Availability.csv</code> must appear in <code>Lab Schedule.csv</code>, in the same order.</p>
+
+          <div class="example-block">
+            <span class="example-title">Lab Schedule.csv</span>
+            <p class="muted">One row per lab section that needs a TA.</p>
+            <ul class="column-legend">
+              <li><code>Lab Name</code> — lab section code (for example, 001L)</li>
+              <li><code>Day</code> — day of the week as a number (for example, 2 = Tuesday, 3 = Wednesday)</li>
+              <li><code>Start</code> — lab start time in <code>H:MM</code> or <code>HH:MM</code> format</li>
+              <li><code>End</code> — lab end time in the same format</li>
+            </ul>
+            <div class="csv-sample">Lab Name,Day,Start,End
 001L,3,8:00,9:50
 002L,3,10:00,11:50
-003L,3,15:15,17:05
+003L,3,15:15,17:05</div>
+            <p class="csv-row-label">Row 1 above means: lab <strong>001L</strong> meets on day <strong>3</strong> from <strong>8:00</strong> to <strong>9:50</strong>.</p>
+          </div>
 
-Availability.csv
-Lab Name,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W
-001L,x,,x,x,,x,,x,,,,,,x,,,,x,,x,,,x
-002L,x,,,,,,x,,,,,,,x,x,,,,,,,
-003L,,x,,,x,,,,x,,x,,x,,,,,,,x,,,x
-            </pre>
+          <div class="example-block">
+            <span class="example-title">Availability.csv</span>
+            <p class="muted">Shows which TAs can cover which labs. Each TA gets a column letter.</p>
+            <ul class="column-legend">
+              <li><code>Lab Name</code> — must match a lab from <code>Lab Schedule.csv</code></li>
+              <li><code>A</code>, <code>B</code>, <code>C</code>, … — one column per TA; put <code>x</code> if that TA is available, or leave the cell blank if not</li>
+            </ul>
+            <div class="csv-sample">Lab Name,A,B,C,D,E
+001L,x,,x,x,
+002L,x,x,,,
+003L,,x,x,,</div>
+            <p class="csv-row-label">Row 1 above means: for lab <strong>001L</strong>, TAs <strong>A</strong>, <strong>C</strong>, and <strong>D</strong> are available. The empty cells between commas mean those TAs are not available.</p>
+            <p class="muted" style="margin-top: 0.75rem;">The finished schedule shows the lab, the assigned TA letter, and the lab time. Example output row: <code>001L | A | 8:00 - 9:50</code>.</p>
           </div>
         </div>
       </section>
@@ -340,6 +535,8 @@ os.chdir('/tmp')
 
       const classPanel = document.getElementById('classPanel');
       const taPanel = document.getElementById('taPanel');
+      const classGuide = document.getElementById('classGuide');
+      const taGuide = document.getElementById('taGuide');
       const tableHead = document.getElementById('tableHead');
       const resultsBody = document.getElementById('resultsBody');
       const statusEl = document.getElementById('status');
@@ -349,6 +546,8 @@ os.chdir('/tmp')
         const isClass = mode === 'class';
         classPanel.classList.toggle('hidden', !isClass);
         taPanel.classList.toggle('hidden', isClass);
+        classGuide.classList.toggle('hidden', !isClass);
+        taGuide.classList.toggle('hidden', isClass);
         tableHead.innerHTML = isClass
           ? '<tr><th>Class</th><th>Teacher</th><th>Time</th><th>Students</th></tr>'
           : '<tr><th>Lab</th><th>TA</th><th>Time</th></tr>';
