@@ -234,10 +234,12 @@ for teacher in teachers:
     teacher[2] = int(teacher[2])
 masterclasses = read_csv_to_2d_list(file_path3)
 for item in masterclasses:
+    item[0] = int(item[0])
     item[1] = int(item[1])
 times = read_csv_to_2d_list(file_path4)
 groupclasses = read_csv_to_2d_list(file_path5)
 for item in groupclasses:
+    item[0] = int(item[0])
     item[1] = int(item[1])
     if item[2] != '':
         item[2] = int(item[2])
