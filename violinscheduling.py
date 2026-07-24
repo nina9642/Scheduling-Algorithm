@@ -1,5 +1,6 @@
 import random
 import csv
+import asyncio
 
 from scheduling1 import POPULATION_SIZE
 
@@ -270,25 +271,31 @@ for item in teachers:
     teacher_levels[item[0]] = item[2]
 print(fitness(create_individual(students,teachers,groupclasses,masterclasses,orchestra,times), class_levels, teacher_levels))
 
-P = [create_individual(students, teachers, groupclasses, masterclasses, orchestra, times)
-     for _ in range(POPULATION_SIZE)]
+best_score = 0
+best_schedule = []
 
-best_score, best_schedule = bestfitness(P)
-
-P2 = [best_schedule]          # Keep the best schedule
-
-for generation in range(GENERATIONS):
+async def run_solver_async():
+    global P, best_score, best_schedule
+    P = [create_individual(students, teachers, groupclasses, masterclasses, orchestra, times)
+         for _ in range(POPULATION_SIZE)]
     best_score, best_schedule = bestfitness(P)
-    #print("Generation:", generation, "Fitness:", best_score)
-    P2 = [best_schedule]  # elitism
-    while len(P2) < POPULATION_SIZE:
-        parent1 = parent(P, TSIZE)
-        parent2 = parent(P, TSIZE)
-        child = mutation(crossover(parent1,parent2))
-        P2.append(child)
-    P = P2
-best_score, best_schedule = bestfitness(P)
-print("\nFINAL SCHEDULE")
-print("----------------")
-for item in best_schedule:
-    print("Class:", item[0], "| Time:", item[1], "| Teacher:", item[2], "| Students:", item[3])
+    for generation in range(GENERATIONS):
+        best_score, best_schedule = bestfitness(P)
+        print(f'SOLVER_PROGRESS {generation + 1}/{GENERATIONS}')
+        P2 = [best_schedule]
+        while len(P2) < POPULATION_SIZE:
+            parent1 = parent(P, TSIZE)
+            parent2 = parent(P, TSIZE)
+            child = mutation(crossover(parent1, parent2))
+            P2.append(child)
+        P = P2
+        await asyncio.sleep(0)
+    best_score, best_schedule = bestfitness(P)
+    return best_score, best_schedule
+
+if __name__ == '__main__':
+    asyncio.run(run_solver_async())
+    print("\nFINAL SCHEDULE")
+    print("----------------")
+    for item in best_schedule:
+        print("Class:", item[0], "| Time:", item[1], "| Teacher:", item[2], "| Students:", item[3])

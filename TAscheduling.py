@@ -1,5 +1,6 @@
 import random
 import csv
+import asyncio
 
 def read_csv(file_path, skip_header=True):
     result = []
@@ -137,11 +138,15 @@ MUTATION_RATE = 0.1 #probability of mutation
 GENERATIONS = 100 #max number of generations 
 TSIZE = 5
 
+lab_time_labels = {}
 for row in labs:
+    lab_time_labels[row[0]] = (row[2], row[3])
     row[1] = int(row[1])
     row[2] = str_to_int(row[2])
     row[3] = str_to_int(row[3])
     #print(row)
+
+ta_names = availability[0][1:]
 
 for row in availability[1:]:
     for i in range(1,len(row)):
@@ -151,40 +156,30 @@ for row in availability[1:]:
             row[i] = 1
     #print(row)
 
-P = [create_individual(availability) for _ in range(POPULATION_SIZE)]
-#print("Population size:", len(P))
+f = 0
+w = []
 
-# for i in range(5):
-#     print(fitness(labs, P[i]))
+async def run_solver_async():
+    global P, f, w
+    P = [create_individual(availability) for _ in range(POPULATION_SIZE)]
+    for step in range(GENERATIONS):
+        f, w = bestfitness(P)
+        print(f'SOLVER_PROGRESS {step + 1}/{GENERATIONS}')
+        P2 = []
+        for i in range(POPULATION_SIZE):
+            parent1 = parent(P, TSIZE)
+            parent2 = parent(P, TSIZE)
+            child = mutation(crossover(parent1, parent2))
+            P2.append(child)
+        P = P2
+        await asyncio.sleep(0)
+    return f, w
 
-f1 = 0
-
-for step in range(GENERATIONS):
-    #f = mutation(crossover(parent(P, TSIZE), parent(P, TSIZE)))
-    f,w = bestfitness(P) #if two things are being returned, format like this to assign the things
-    # if step % 100 == 0:
-    #     print(step)
-    #     if f - f1 < 0.00000000000001:
-    #         print(step+1)
-    #         break
-    #     f1 = f
-    print('THIS IS STEP', step)
-
-    #print(w)
-    P2 = []
-
-    for i in range(POPULATION_SIZE):
-        parent1 = parent(P, TSIZE)
-        parent2 = parent(P, TSIZE)
-
-        child = mutation(crossover(parent1, parent2))
-        P2.append(child)
-
-    P = P2
-
-from operator import itemgetter
-sorted_w = sorted(w, key=itemgetter(1))
-for row in sorted_w:
-    print(row[0], row[1])
-print(f)
+if __name__ == '__main__':
+    asyncio.run(run_solver_async())
+    from operator import itemgetter
+    sorted_w = sorted(w, key=itemgetter(1))
+    for row in sorted_w:
+        print(row[0], row[1])
+    print(f)
 

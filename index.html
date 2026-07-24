@@ -63,6 +63,24 @@
       }
       th, td { padding: 0.7rem; border-bottom: 1px solid rgba(255,255,255,0.12); text-align: left; }
       .status { margin-top: 0.75rem; color: #9edcff; }
+      .progress-container { margin-top: 0.85rem; }
+      .progress-label { color: #d8ecff; font-size: 0.95rem; }
+      .progress-track {
+        width: 100%;
+        height: 10px;
+        background: rgba(255, 255, 255, 0.12);
+        border-radius: 999px;
+        overflow: hidden;
+        margin-top: 0.45rem;
+      }
+      .progress-fill {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #32c5ff, #5eead4);
+        border-radius: 999px;
+        transition: width 0.15s ease;
+      }
+      .progress-text { margin-top: 0.35rem; color: #9edcff; font-size: 0.9rem; }
       .muted { color: #8fb0c8; font-size: 0.95rem; }
       .mode-row { display: flex; gap: 1rem; flex-wrap: wrap; margin: 0.85rem 0 1rem; }
       .hidden { display: none; }
@@ -107,6 +125,13 @@
             <button id="loadSampleButton" type="button">Load sample files</button>
           </div>
           <div id="status" class="status">Waiting for files…</div>
+          <div id="progressContainer" class="progress-container hidden">
+            <div id="progressLabel" class="progress-label">Loading…</div>
+            <div class="progress-track">
+              <div id="progressFill" class="progress-fill"></div>
+            </div>
+            <div id="progressText" class="progress-text"></div>
+          </div>
         </section>
 
         <section class="card">
@@ -186,10 +211,62 @@ Lab Name,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W
     <script>
       let pyodideReady = null;
 
+      const progressContainer = document.getElementById('progressContainer');
+      const progressFill = document.getElementById('progressFill');
+      const progressLabel = document.getElementById('progressLabel');
+      const progressText = document.getElementById('progressText');
+      const runButton = document.getElementById('runButton');
+
+      function showProgress(label, current, total) {
+        progressContainer.classList.remove('hidden');
+        progressLabel.textContent = label;
+        if (total > 0) {
+          const pct = Math.min(100, Math.round((current / total) * 100));
+          progressFill.style.width = `${pct}%`;
+          progressText.textContent = `${current}/${total}`;
+        } else {
+          progressFill.style.width = '35%';
+          progressText.textContent = '';
+        }
+      }
+
+      function hideProgress() {
+        progressContainer.classList.add('hidden');
+        progressFill.style.width = '0%';
+        progressText.textContent = '';
+      }
+
+      function setupSolverStdout(pyodide) {
+        pyodide.setStdout({
+          batched: (text) => {
+            const match = text.match(/SOLVER_PROGRESS\s+(\d+)\/(\d+)/);
+            if (match) {
+              showProgress(
+                'Running genetic algorithm…',
+                Number.parseInt(match[1], 10),
+                Number.parseInt(match[2], 10),
+              );
+            }
+          },
+        });
+      }
+
+      async function reloadPythonModule(pyodide, moduleName) {
+        const source = await fetch(`./${moduleName}?t=${Date.now()}`).then((response) => response.text());
+        pyodide.FS.writeFile(`/tmp/${moduleName}`, source);
+        await pyodide.runPythonAsync(`
+import sys
+if '${moduleName.replace('.py', '')}' in sys.modules:
+    del sys.modules['${moduleName.replace('.py', '')}']
+`);
+      }
+
       async function ensurePyodide() {
         if (pyodideReady) {
           return pyodideReady;
         }
+        showProgress('Loading Python runtime…', 0, 1);
+        statusEl.textContent = 'Loading Python runtime…';
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js';
         document.head.appendChild(script);
@@ -198,15 +275,19 @@ Lab Name,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W
           script.onerror = reject;
         });
         const pyodide = await window.loadPyodide({ indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/' });
+        showProgress('Loading Python runtime…', 1, 1);
         const requiredFiles = [
           ['scheduling1.py', './scheduling1.py'],
           ['violinscheduling.py', './violinscheduling.py'],
           ['TAscheduling.py', './TAscheduling.py'],
         ];
-        await Promise.all(requiredFiles.map(async ([name, url]) => {
-          const source = await fetch(url).then((response) => response.text());
+        for (let index = 0; index < requiredFiles.length; index += 1) {
+          const [name, url] = requiredFiles[index];
+          showProgress('Loading scheduling algorithms…', index + 1, requiredFiles.length);
+          statusEl.textContent = `Loading scheduling algorithms… (${index + 1}/${requiredFiles.length})`;
+          const source = await fetch(`${url}?t=${Date.now()}`).then((response) => response.text());
           pyodide.FS.writeFile(`/tmp/${name}`, source);
-        }));
+        }
         await pyodide.runPythonAsync(`
 import os
 import sys
@@ -270,7 +351,7 @@ os.chdir('/tmp')
         taPanel.classList.toggle('hidden', isClass);
         tableHead.innerHTML = isClass
           ? '<tr><th>Class</th><th>Teacher</th><th>Time</th><th>Students</th></tr>'
-          : '<tr><th>Lab</th><th>TA</th><th>Start</th><th>End</th></tr>';
+          : '<tr><th>Lab</th><th>TA</th><th>Time</th></tr>';
       }
 
       document.querySelectorAll('input[name="mode"]').forEach((radio) => {
@@ -303,8 +384,9 @@ os.chdir('/tmp')
 
       function renderRows(rows, mode) {
         resultsBody.innerHTML = '';
+        const columnCount = mode === 'class' ? 4 : 3;
         if (!rows.length) {
-          resultsBody.innerHTML = `<tr><td colspan="4">No schedule output yet.</td></tr>`;
+          resultsBody.innerHTML = `<tr><td colspan="${columnCount}">No schedule output yet.</td></tr>`;
           return;
         }
         rows.forEach((row) => {
@@ -313,7 +395,7 @@ os.chdir('/tmp')
             const students = Array.isArray(row.students) ? row.students.join(", ") : 'n/a';
             tr.innerHTML = `<td>${row.classId}</td><td>${row.teacher}</td><td>${row.time}</td><td>${students}</td>`;
           } else {
-            tr.innerHTML = `<td>${row.lab}</td><td>${row.ta}</td><td>${row.start ?? 'n/a'}</td><td>${row.end ?? 'n/a'}</td>`;
+            tr.innerHTML = `<td>${row.lab}</td><td>${row.ta}</td><td>${row.time ?? 'n/a'}</td>`;
           }
           resultsBody.appendChild(tr);
         });
@@ -321,45 +403,75 @@ os.chdir('/tmp')
 
       document.getElementById('runButton').addEventListener('click', async () => {
         try {
+          runButton.disabled = true;
+          hideProgress();
           statusEl.textContent = 'Loading repository scheduling algorithms…';
           const pyodide = await ensurePyodide();
           const mode = document.querySelector('input[name="mode"]:checked').value;
           const files = await collectFiles();
           await prepareUploadedFiles(pyodide, mode, files);
+          setupSolverStdout(pyodide);
 
           if (mode === 'class') {
+            showProgress('Running genetic algorithm…', 0, 100);
+            statusEl.textContent = 'Running class scheduling solver…';
+            await reloadPythonModule(pyodide, 'violinscheduling.py');
             const resultText = await pyodide.runPythonAsync(`
 import json
 import violinscheduling as solver
-rows = []
-for row in solver.best_schedule:
-    rows.append({
-        'classId': str(row[0]),
-        'teacher': str(row[2]),
-        'time': str(row[1]),
-        'classLevel': int(solver.class_levels[row[0]]),
-        'students': [str(student) for student in row[3]],
-    })
-json.dumps({'rows': rows, 'score': float(solver.best_score)})
+
+async def main():
+    await solver.run_solver_async()
+    rows = []
+    for row in solver.best_schedule:
+        rows.append({
+            'classId': str(row[0]),
+            'teacher': str(row[2]),
+            'time': str(row[1]),
+            'classLevel': int(solver.class_levels[row[0]]),
+            'students': [str(student) for student in row[3]],
+        })
+    return json.dumps({'rows': rows, 'score': float(solver.best_score)})
+
+await main()
 `);
             const result = JSON.parse(resultText);
             renderRows(result.rows, 'class');
             scoreEl.textContent = `Score: ${Number(result.score).toFixed(2)}`;
             statusEl.textContent = `Solved ${result.rows.length} classes successfully.`;
           } else {
+            showProgress('Running genetic algorithm…', 0, 100);
+            statusEl.textContent = 'Running TA scheduling solver…';
+            await reloadPythonModule(pyodide, 'TAscheduling.py');
             const resultText = await pyodide.runPythonAsync(`
+import csv
 import json
 import TAscheduling as solver
-rows = []
-for lab_id, ta_id in solver.w:
-    lab = next((entry for entry in solver.labs if entry[0] == lab_id), {'0': 'Lab'})
-    rows.append({
-        'lab': str(lab[0]),
-        'ta': str(ta_id),
-        'start': str(lab[2]),
-        'end': str(lab[3]),
-    })
-json.dumps({'rows': rows, 'score': float(solver.f)})
+
+async def main():
+    await solver.run_solver_async()
+    lab_times = {}
+    with open('Lab Schedule.csv', newline='', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        next(reader)
+        for row in reader:
+            lab_times[row[0]] = (row[2], row[3])
+
+    ta_names = solver.availability[0][1:]
+    rows = []
+    for lab_id, ta_name in solver.w:
+        start, end = lab_times.get(lab_id, ('n/a', 'n/a'))
+        if isinstance(ta_name, int) or (isinstance(ta_name, str) and ta_name.isdigit()):
+            index = int(ta_name)
+            ta_name = ta_names[index - 1] if 1 <= index <= len(ta_names) else ta_name
+        rows.append({
+            'lab': str(lab_id),
+            'ta': str(ta_name),
+            'time': f'{start} - {end}',
+        })
+    return json.dumps({'rows': rows, 'score': float(solver.f)})
+
+await main()
 `);
             const result = JSON.parse(resultText);
             renderRows(result.rows, 'ta');
@@ -370,6 +482,9 @@ json.dumps({'rows': rows, 'score': float(solver.f)})
           statusEl.textContent = error.message;
           scoreEl.textContent = 'Score: —';
           console.error(error);
+        } finally {
+          runButton.disabled = false;
+          hideProgress();
         }
       });
 
