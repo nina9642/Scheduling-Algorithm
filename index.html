@@ -198,10 +198,52 @@ Lab Name,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W
           script.onerror = reject;
         });
         const pyodide = await window.loadPyodide({ indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/' });
-        const solverCode = await fetch('./solver.py').then((response) => response.text());
-        await pyodide.runPythonAsync(solverCode);
+        const requiredFiles = [
+          ['scheduling1.py', './scheduling1.py'],
+          ['violinscheduling.py', './violinscheduling.py'],
+          ['TAscheduling.py', './TAscheduling.py'],
+        ];
+        await Promise.all(requiredFiles.map(async ([name, url]) => {
+          const source = await fetch(url).then((response) => response.text());
+          pyodide.FS.writeFile(`/tmp/${name}`, source);
+        }));
+        await pyodide.runPythonAsync(`
+import os
+import sys
+os.makedirs('/tmp', exist_ok=True)
+os.chdir('/tmp')
+if '/tmp' not in sys.path:
+    sys.path.insert(0, '/tmp')
+`);
         pyodideReady = pyodide;
         return pyodide;
+      }
+
+      async function prepareUploadedFiles(pyodide, mode, files) {
+        const fileMap = mode === 'class'
+          ? {
+              students: 'Students.csv',
+              teachers: 'Teachers.csv',
+              masterclasses: 'Masterclasses.csv',
+              groupclasses: 'Group Class.csv',
+              orchestra: 'Orchestra.csv',
+              times: 'Times.csv',
+            }
+          : {
+              labs: 'Lab Schedule.csv',
+              availability: 'Availability.csv',
+            };
+
+        for (const [key, fileName] of Object.entries(fileMap)) {
+          if (!files[key] || !files[key].text) {
+            throw new Error(`Please upload ${fileName}.`);
+          }
+          pyodide.FS.writeFile(`/tmp/${fileName}`, files[key].text);
+        }
+        await pyodide.runPythonAsync(`
+import os
+os.chdir('/tmp')
+`);
       }
 
       const fileInputs = {
@@ -227,7 +269,7 @@ Lab Name,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W
         classPanel.classList.toggle('hidden', !isClass);
         taPanel.classList.toggle('hidden', isClass);
         tableHead.innerHTML = isClass
-          ? '<tr><th>Class</th><th>Teacher</th><th>Time</th><th>Level</th></tr>'
+          ? '<tr><th>Class</th><th>Teacher</th><th>Time</th><th>Students</th></tr>'
           : '<tr><th>Lab</th><th>TA</th><th>Start</th><th>End</th></tr>';
       }
 
@@ -268,7 +310,8 @@ Lab Name,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W
         rows.forEach((row) => {
           const tr = document.createElement('tr');
           if (mode === 'class') {
-            tr.innerHTML = `<td>${row.classId}</td><td>${row.teacher}</td><td>${row.time}</td><td>${row.classLevel}</td>`;
+            const studentCount = Array.isArray(row.students) ? row.students.length : 'n/a';
+            tr.innerHTML = `<td>${row.classId}</td><td>${row.teacher}</td><td>${row.time}</td><td>${studentCount}</td>`;
           } else {
             tr.innerHTML = `<td>${row.lab}</td><td>${row.ta}</td><td>${row.start ?? 'n/a'}</td><td>${row.end ?? 'n/a'}</td>`;
           }
@@ -278,20 +321,46 @@ Lab Name,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W
 
       document.getElementById('runButton').addEventListener('click', async () => {
         try {
-          statusEl.textContent = 'Loading Python solver…';
+          statusEl.textContent = 'Loading repository scheduling algorithms…';
           const pyodide = await ensurePyodide();
           const mode = document.querySelector('input[name="mode"]:checked').value;
           const files = await collectFiles();
+          await prepareUploadedFiles(pyodide, mode, files);
+
           if (mode === 'class') {
-            const payload = JSON.stringify(files);
-            const resultText = pyodide.globals.get('solve_class_from_files')(payload);
+            const resultText = await pyodide.runPythonAsync(`
+import json
+import violinscheduling as solver
+rows = []
+for row in solver.best_schedule:
+    rows.append({
+        'classId': str(row[0]),
+        'teacher': str(row[2]),
+        'time': str(row[1]),
+        'classLevel': int(solver.class_levels[str(row[0])]),
+        'students': [str(student) for student in row[3]],
+    })
+json.dumps({'rows': rows, 'score': float(solver.best_score)})
+`);
             const result = JSON.parse(resultText);
             renderRows(result.rows, 'class');
             scoreEl.textContent = `Score: ${Number(result.score).toFixed(2)}`;
             statusEl.textContent = `Solved ${result.rows.length} classes successfully.`;
           } else {
-            const payload = JSON.stringify(files);
-            const resultText = pyodide.globals.get('solve_ta_from_files')(payload);
+            const resultText = await pyodide.runPythonAsync(`
+import json
+import TAscheduling as solver
+rows = []
+for lab_id, ta_id in solver.w:
+    lab = next((entry for entry in solver.labs if entry[0] == lab_id), {'0': 'Lab'})
+    rows.append({
+        'lab': str(lab[0]),
+        'ta': str(ta_id),
+        'start': str(lab[2]),
+        'end': str(lab[3]),
+    })
+json.dumps({'rows': rows, 'score': float(solver.f)})
+`);
             const result = JSON.parse(resultText);
             renderRows(result.rows, 'ta');
             scoreEl.textContent = `Score: ${Number(result.score).toFixed(2)}`;
