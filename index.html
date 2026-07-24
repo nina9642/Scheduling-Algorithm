@@ -56,6 +56,30 @@
         cursor: pointer;
       }
       button:hover { filter: brightness(1.05); }
+      button:disabled { opacity: 0.6; cursor: not-allowed; }
+      .category-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem;
+        margin-top: 1.25rem;
+      }
+      .category-nav button {
+        background: rgba(255, 255, 255, 0.08);
+        color: #d8ecff;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        font-size: 0.92rem;
+      }
+      .category-nav button.active {
+        background: #32c5ff;
+        color: #08101c;
+        border-color: #32c5ff;
+      }
+      .help-section {
+        margin-top: 1rem;
+      }
+      .help-section h2 {
+        margin-top: 0;
+      }
       table {
         width: 100%;
         border-collapse: collapse;
@@ -166,7 +190,13 @@
     <div class="container">
       <section class="hero">
         <h1>Scheduling Algorithm Web App</h1>
-        <p class="muted">Upload your schedule data as CSV files, run the solver, and get a suggested schedule in seconds. New to CSV files or genetic algorithms? Scroll down for step-by-step instructions and examples.</p>
+        <p class="muted">Upload your CSV files, run the solver, and view the suggested schedule. Use the topics below for export help, examples, and background on how the solver works.</p>
+        <nav class="category-nav" aria-label="Help topics">
+          <button type="button" class="help-tab" data-panel="helpExport">Export CSV files</button>
+          <button type="button" class="help-tab" data-panel="helpGenetic">How the genetic algorithm works</button>
+          <button type="button" class="help-tab" data-panel="helpClassExamples">Violin scheduling examples</button>
+          <button type="button" class="help-tab" data-panel="helpTaExamples">TA scheduling examples</button>
+        </nav>
       </section>
 
       <div class="grid">
@@ -178,7 +208,7 @@
           </div>
 
           <div id="classPanel">
-            <p class="muted">Expected files: Students, Teachers, Masterclasses, Group Classes, Orchestra, and Times. See section 6 below for column definitions and examples.</p>
+            <p class="muted">Expected files: Students, Teachers, Masterclasses, Group Classes, Orchestra, and Times. Open <em>Violin scheduling examples</em> above for column definitions.</p>
             <label>Students CSV<input id="studentsFile" type="file" accept=".csv" /></label>
             <label>Teachers CSV<input id="teachersFile" type="file" accept=".csv" /></label>
             <label>Masterclasses CSV<input id="masterclassesFile" type="file" accept=".csv" /></label>
@@ -188,14 +218,14 @@
           </div>
 
           <div id="taPanel" class="hidden">
-            <p class="muted">Expected files: Lab Schedule and Availability. See section 6 below for column definitions and examples.</p>
+            <p class="muted">Expected files: Lab Schedule and Availability. Open <em>TA scheduling examples</em> above for column definitions.</p>
             <label>Lab Schedule CSV<input id="labsFile" type="file" accept=".csv" /></label>
             <label>Availability CSV<input id="availabilityFile" type="file" accept=".csv" /></label>
           </div>
 
           <div style="margin-top: 1rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
             <button id="runButton">Run scheduling solver</button>
-            <button id="loadSampleButton" type="button">Load sample files</button>
+            <button id="loadSampleButton" type="button">Example Files</button>
           </div>
           <div id="status" class="status">Waiting for files…</div>
           <div id="progressContainer" class="progress-container hidden">
@@ -220,45 +250,61 @@
         </section>
       </div>
 
-      <section class="card" style="margin-top: 1rem;">
-        <h2>3. How to use this app</h2>
+      <section id="helpExport" class="card help-section hidden">
+        <h2>Export CSV files from Google Sheets or Excel</h2>
         <div class="guide">
           <ol class="guide-steps">
-            <li><strong>Pick a workflow.</strong> Choose <em>Class scheduling</em> for teachers, students, and time slots, or <em>TA scheduling</em> for lab sections and teaching assistants.</li>
-            <li><strong>Prepare your CSV files.</strong> Each file is a simple spreadsheet saved as <code>.csv</code>. See sections 4 and 5 below for what each column means.</li>
-            <li><strong>Upload the files</strong> using the file pickers above, or click <em>Load sample files</em> to try the built-in examples first.</li>
-            <li><strong>Click Run scheduling solver.</strong> A progress bar will count through the generations (for example, 1/100, 2/100, and so on).</li>
-            <li><strong>Read the output table.</strong> The solver shows its best schedule and a score. Higher scores usually mean fewer conflicts and a more balanced assignment.</li>
+            <li><strong>Pick a workflow</strong> in the upload panel: Class scheduling or TA scheduling.</li>
+            <li><strong>Build your spreadsheet</strong> with the correct column headers and one row per student, teacher, class, lab, or time slot.</li>
+            <li><strong>Export each sheet as CSV</strong> using the steps below, then upload the files and click <em>Run scheduling solver</em>.</li>
           </ol>
-        </div>
-      </section>
 
-      <section class="card" style="margin-top: 1rem;">
-        <h2>4. What is a CSV file?</h2>
-        <div class="guide">
-          <p>A CSV (<strong>C</strong>omma-<strong>S</strong>eparated <strong>V</strong>alues) file is a plain-text spreadsheet. Programs like Excel, Google Sheets, and Numbers can open and save them.</p>
-          <div class="tip-box">
-            <p><strong>Commas separate columns.</strong> Each comma marks the end of one cell and the start of the next.</p>
-            <p style="margin-top: 0.65rem;"><strong>Example:</strong> <code>1,Jason Cao,8,V0812</code> means four cells in one row:</p>
+          <h3 style="margin-top: 1.25rem;">What is a CSV file?</h3>
+          <p>A CSV (<strong>C</strong>omma-<strong>S</strong>eparated <strong>V</strong>alues) file is a plain-text spreadsheet. Commas separate columns, the first row is the header, and each following row is one record.</p>
+          <div class="tip-box" style="margin-top: 0.85rem;">
+            <p><strong>Example row:</strong> <code>1,John Doe,8,V0812</code></p>
             <ul style="margin-top: 0.5rem;">
-              <li>Cell 1: <code>1</code></li>
-              <li>Cell 2: <code>Jason Cao</code></li>
-              <li>Cell 3: <code>8</code></li>
-              <li>Cell 4: <code>V0812</code></li>
+              <li>Column 1: <code>1</code> (ID)</li>
+              <li>Column 2: <code>John Doe</code> (name)</li>
+              <li>Column 3: <code>8</code> (book level)</li>
+              <li>Column 4: <code>V0812</code> (piece)</li>
             </ul>
+            <p style="margin-top: 0.65rem;">Two commas in a row, like <code>3,4,,</code>, means an empty cell. That is normal for optional columns.</p>
           </div>
+
+          <div class="example-block" style="margin-top: 1.25rem;">
+            <span class="example-title">Google Sheets</span>
+            <ol>
+              <li>Open your spreadsheet in Google Sheets.</li>
+              <li>Make sure the first row contains your column names (for example, <code>ID</code>, <code>Name</code>, <code>Book</code>).</li>
+              <li>Click <strong>File</strong> → <strong>Download</strong> → <strong>Comma Separated Values (.csv)</strong>.</li>
+              <li>Repeat for each file you need, or keep one sheet per file and download them one at a time.</li>
+              <li>Upload the downloaded <code>.csv</code> files into this app.</li>
+            </ol>
+          </div>
+
+          <div class="example-block">
+            <span class="example-title">Microsoft Excel</span>
+            <ol>
+              <li>Open your spreadsheet in Excel.</li>
+              <li>Keep one worksheet per file if you are creating multiple CSVs (for example, one sheet for students and one for teachers).</li>
+              <li>Click <strong>File</strong> → <strong>Save As</strong>.</li>
+              <li>Choose a folder, then set <strong>Save as type</strong> to <strong>CSV (Comma delimited) (*.csv)</strong> or <strong>CSV UTF-8</strong>.</li>
+              <li>Click <strong>Save</strong>. If Excel warns that only the active sheet will be saved, that is expected.</li>
+              <li>Upload the saved <code>.csv</code> files into this app.</li>
+            </ol>
+          </div>
+
           <ul style="margin-top: 1rem;">
-            <li><strong>First row = column names.</strong> The top row tells the app what each column represents. Do not delete it.</li>
-            <li><strong>One row = one record.</strong> Each line after the header is one student, teacher, class, lab, or time slot.</li>
-            <li><strong>Empty cells are okay.</strong> If a value is missing, leave that spot blank. In the file this looks like two commas in a row, like <code>3,4,,</code>.</li>
-            <li><strong>Save as CSV, not Excel.</strong> When exporting from a spreadsheet app, choose “CSV” or “Comma Separated Values.”</li>
-            <li><strong>Keep column order the same</strong> as in the examples below unless you are sure the app supports your headers.</li>
+            <li><strong>Use separate files.</strong> This app expects one CSV per category (Students, Teachers, and so on), not one workbook with every sheet combined.</li>
+            <li><strong>Keep the header row.</strong> Do not delete the top row of column names.</li>
+            <li><strong>Match the example formats</strong> in the Violin scheduling or TA scheduling tabs above.</li>
           </ul>
         </div>
       </section>
 
-      <section class="card" style="margin-top: 1rem;">
-        <h2>5. How the genetic algorithm works</h2>
+      <section id="helpGenetic" class="card help-section hidden">
+        <h2>How the genetic algorithm works</h2>
         <div class="guide">
           <p>This app uses a <strong>genetic algorithm</strong>, a search method inspired by evolution in nature. Instead of trying every possible schedule by hand, the computer creates many candidate schedules, keeps the good ones, and improves them over time.</p>
           <ol>
@@ -273,14 +319,11 @@
         </div>
       </section>
 
-      <section class="card" style="margin-top: 1rem;">
-        <h2>6. CSV file reference and examples</h2>
-        <p class="muted">Each example below shows the file name, what every column means, and a sample row with labels.</p>
+      <section id="helpClassExamples" class="card help-section hidden">
+        <h2>Violin scheduling example files</h2>
+        <p class="muted">Use these formats for class scheduling. You need all six files. Student IDs in class files must match <code>Students.csv</code>, and teacher IDs must match <code>Teachers.csv</code>.</p>
 
-        <div id="classGuide" class="guide">
-          <h3>Class scheduling files</h3>
-          <p>You need all six files below. Student IDs used in class files must match the IDs in <code>Students.csv</code>. Teacher IDs must match <code>Teachers.csv</code>.</p>
-
+        <div class="guide">
           <div class="example-block">
             <span class="example-title">Students.csv</span>
             <p class="muted">One row per student.</p>
@@ -291,9 +334,9 @@
               <li><code>Piece</code> — optional piece code or name</li>
             </ul>
             <div class="csv-sample">ID,Name,Book,Piece
-1,Jason Cao,8,V0812
-2,Kaitlyn Murray,8,V0805</div>
-            <p class="csv-row-label">Row 1 above means: student ID <strong>1</strong>, named <strong>Jason Cao</strong>, book level <strong>8</strong>, piece <strong>V0812</strong>.</p>
+1,John Doe,8,V0812
+2,Jane Doe,8,V0805</div>
+            <p class="csv-row-label">Row 1 above means: student ID <strong>1</strong>, named <strong>John Doe</strong>, book level <strong>8</strong>, piece <strong>V0812</strong>.</p>
           </div>
 
           <div class="example-block">
@@ -364,11 +407,13 @@
             <p class="csv-row-label">Row 1 above means: time slot ID <strong>1</strong> is labeled <strong>9</strong> in the finished schedule.</p>
           </div>
         </div>
+      </section>
 
-        <div id="taGuide" class="guide hidden">
-          <h3>TA scheduling files</h3>
-          <p>You need both files below. Every lab in <code>Availability.csv</code> must appear in <code>Lab Schedule.csv</code>, in the same order.</p>
+      <section id="helpTaExamples" class="card help-section hidden">
+        <h2>TA scheduling example files</h2>
+        <p class="muted">Use these formats for TA scheduling. You need both files. Every lab in <code>Availability.csv</code> must appear in <code>Lab Schedule.csv</code>, in the same order.</p>
 
+        <div class="guide">
           <div class="example-block">
             <span class="example-title">Lab Schedule.csv</span>
             <p class="muted">One row per lab section that needs a TA.</p>
@@ -535,8 +580,8 @@ os.chdir('/tmp')
 
       const classPanel = document.getElementById('classPanel');
       const taPanel = document.getElementById('taPanel');
-      const classGuide = document.getElementById('classGuide');
-      const taGuide = document.getElementById('taGuide');
+      const helpTabs = document.querySelectorAll('.help-tab');
+      const helpSections = document.querySelectorAll('.help-section');
       const tableHead = document.getElementById('tableHead');
       const resultsBody = document.getElementById('resultsBody');
       const statusEl = document.getElementById('status');
@@ -546,12 +591,31 @@ os.chdir('/tmp')
         const isClass = mode === 'class';
         classPanel.classList.toggle('hidden', !isClass);
         taPanel.classList.toggle('hidden', isClass);
-        classGuide.classList.toggle('hidden', !isClass);
-        taGuide.classList.toggle('hidden', isClass);
         tableHead.innerHTML = isClass
           ? '<tr><th>Class</th><th>Teacher</th><th>Time</th><th>Students</th></tr>'
           : '<tr><th>Lab</th><th>TA</th><th>Time</th></tr>';
       }
+
+      function setHelpPanel(panelId) {
+        const isSamePanel = panelId
+          && !document.getElementById(panelId).classList.contains('hidden');
+
+        helpSections.forEach((section) => section.classList.add('hidden'));
+        helpTabs.forEach((tab) => tab.classList.remove('active'));
+
+        if (panelId && !isSamePanel) {
+          document.getElementById(panelId).classList.remove('hidden');
+          const activeTab = document.querySelector(`.help-tab[data-panel="${panelId}"]`);
+          if (activeTab) {
+            activeTab.classList.add('active');
+          }
+          document.getElementById(panelId).scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+
+      helpTabs.forEach((tab) => {
+        tab.addEventListener('click', () => setHelpPanel(tab.dataset.panel));
+      });
 
       document.querySelectorAll('input[name="mode"]').forEach((radio) => {
         radio.addEventListener('change', () => setMode(radio.value));
