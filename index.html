@@ -240,6 +240,10 @@
         <section class="card">
           <h2>2. Output</h2>
           <p class="muted">The solver returns a best-effort schedule with assignments and timing.</p>
+          <div style="margin-bottom: 1rem; display: flex; gap: 0.75rem;">
+            <button id="copyButton" type="button">📋 Copy Schedule</button>
+            <button id="downloadButton" type="button">⬇️ Download CSV</button>
+          </div>
           <table>
             <thead>
               <tr id="tableHead"><th>Item</th><th>Assigned</th><th>Time</th><th>Extra</th></tr>
@@ -799,6 +803,63 @@ await main()
           statusEl.textContent = 'Unable to load samples from the repository.';
           console.error(error);
         }
+      });
+      document.getElementById("copyButton").addEventListener("click", async () => {
+          const rows = document.querySelectorAll("#resultsBody tr");
+
+          let text = "";
+
+          // Header
+          const headers = Array.from(document.querySelectorAll("#tableHead th"))
+              .map(th => th.textContent);
+          text += headers.join("\t") + "\n";
+
+          // Data
+          rows.forEach(row => {
+              const cols = Array.from(row.querySelectorAll("td"))
+                  .map(td => td.textContent);
+              text += cols.join("\t") + "\n";
+          });
+
+          await navigator.clipboard.writeText(text);
+
+          alert("Schedule copied to clipboard!");
+      });
+      document.getElementById("downloadButton").addEventListener("click", () => {
+
+          const rows = [];
+
+          // Header
+          rows.push(
+              Array.from(document.querySelectorAll("#tableHead th"))
+              .map(th => th.textContent)
+          );
+
+          // Table rows
+          document.querySelectorAll("#resultsBody tr").forEach(row => {
+              rows.push(
+                  Array.from(row.querySelectorAll("td"))
+                  .map(td => td.textContent)
+              );
+          });
+
+          const csv = rows
+              .map(r => r.join(","))
+              .join("\n");
+
+          const blob = new Blob([csv], {type: "text/csv"});
+
+          const url = URL.createObjectURL(blob);
+
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "schedule.csv";
+
+          document.body.appendChild(a);
+          a.click();
+
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
       });
     </script>
   </body>
