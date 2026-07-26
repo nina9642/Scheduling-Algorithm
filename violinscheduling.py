@@ -252,10 +252,11 @@ for item in orchestra:
             item[i] = int(item[i])
 student_total = len(students)
 teachers_total = len(teachers)
-m_limits = {1:4, 2:4, 3:4, 4:3, 5:3, 6:3, 7:2, 8:2} #limits for masterclasses by book level
-POPULATION_SIZE = 500 #number of schedules in population
-MUTATION_RATE = 0.25 #probability of mutation
-GENERATIONS = 100 #max number of generations 
+m_limits = {1:4, 2:4, 3:4, 4:3, 5:3, 6:3, 7:2, 8:2} # limits for masterclasses by book level
+POPULATION_SIZE = 500 # number of schedules in population
+MUTATION_RATE = 0.25 # probability of mutation
+MAX_NO_IMPROVEMENT = 120 # stop after this many generations with no improvement
+MAX_GENERATIONS = 5000 # safety cap to avoid infinite loops
 TSIZE = 5
 
 class_levels = dict()
@@ -279,9 +280,19 @@ async def run_solver_async():
     P = [create_individual(students, teachers, groupclasses, masterclasses, orchestra, times)
          for _ in range(POPULATION_SIZE)]
     best_score, best_schedule = bestfitness(P)
-    for generation in range(GENERATIONS):
-        best_score, best_schedule = bestfitness(P)
-        print(f'SOLVER_PROGRESS {generation + 1}/{GENERATIONS}')
+    no_improve = 0
+    generation = 0
+
+    while no_improve < MAX_NO_IMPROVEMENT and generation < MAX_GENERATIONS:
+        generation += 1
+        current_score, current_schedule = bestfitness(P)
+        if current_score > best_score:
+            best_score, best_schedule = current_score, current_schedule
+            no_improve = 0
+        else:
+            no_improve += 1
+
+        print(f'SOLVER_PROGRESS {generation} | best={best_score} | stagnation={no_improve}/{MAX_NO_IMPROVEMENT}')
         P2 = [best_schedule]
         while len(P2) < POPULATION_SIZE:
             parent1 = parent(P, TSIZE)
@@ -290,6 +301,7 @@ async def run_solver_async():
             P2.append(child)
         P = P2
         await asyncio.sleep(0)
+
     best_score, best_schedule = bestfitness(P)
     return best_score, best_schedule
 

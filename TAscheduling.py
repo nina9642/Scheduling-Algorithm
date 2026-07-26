@@ -130,12 +130,13 @@ file_path = 'Lab Schedule.csv'
 file_path2 = 'Availability.csv'
 labs = read_csv(file_path)                     # skip header
 availability = read_csv(file_path2, False)
-lab_total = len(labs) #this counts the number of rows in labs to know total
-ta_total = len(availability[0]) - 1 #availability[0] is the first row minus "lab name"
-mean = lab_total/ta_total # equal to 1.739
-POPULATION_SIZE = 1500 #number of schedules in population
-MUTATION_RATE = 0.1 #probability of mutation
-GENERATIONS = 100 #max number of generations 
+lab_total = len(labs) # this counts the number of rows in labs
+ta_total = len(availability[0]) - 1 # availability[0] is the first row minus "lab name"
+mean = lab_total / ta_total
+POPULATION_SIZE = 1500 # number of schedules in population
+MUTATION_RATE = 0.1 # probability of mutation
+MAX_NO_IMPROVEMENT = 120 # stop after this many generations with no score improvement
+MAX_GENERATIONS = 5000 # safety cap to avoid infinite loops
 TSIZE = 5
 
 lab_time_labels = {}
@@ -162,9 +163,20 @@ w = []
 async def run_solver_async():
     global P, f, w
     P = [create_individual(availability) for _ in range(POPULATION_SIZE)]
-    for step in range(GENERATIONS):
-        f, w = bestfitness(P)
-        print(f'SOLVER_PROGRESS {step + 1}/{GENERATIONS}')
+    f, w = bestfitness(P)
+    no_improve = 0
+    generation = 0
+
+    while no_improve < MAX_NO_IMPROVEMENT and generation < MAX_GENERATIONS:
+        generation += 1
+        current_score, current_schedule = bestfitness(P)
+        if current_score > f:
+            f, w = current_score, current_schedule
+            no_improve = 0
+        else:
+            no_improve += 1
+
+        print(f'SOLVER_PROGRESS {generation} | best={f} | stagnation={no_improve}/{MAX_NO_IMPROVEMENT}')
         P2 = []
         for i in range(POPULATION_SIZE):
             parent1 = parent(P, TSIZE)
@@ -173,6 +185,7 @@ async def run_solver_async():
             P2.append(child)
         P = P2
         await asyncio.sleep(0)
+
     return f, w
 
 if __name__ == '__main__':

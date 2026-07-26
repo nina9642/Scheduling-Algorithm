@@ -253,13 +253,23 @@ def build_schedule(events_file: str = 'SciTimes.csv', team_files: Optional[List[
     best_schedule = population[0]
     best_score = fitness(best_schedule, students, events)
 
-    for _ in range(120):
+    no_improve = 0
+    generation = 0
+    max_no_improvement = 120
+    max_generations = 5000
+
+    while no_improve < max_no_improvement and generation < max_generations:
+        generation += 1
         scores = [fitness(individual, students, events) for individual in population]
         current_best = population[max(range(len(scores)), key=lambda i: scores[i])]
         current_best_score = max(scores)
         if current_best_score > best_score:
             best_score = current_best_score
             best_schedule = current_best
+            no_improve = 0
+        else:
+            no_improve += 1
+
         next_population = []
         while len(next_population) < len(population):
             parent1 = parent(population, 5, students, events)
