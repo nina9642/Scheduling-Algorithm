@@ -656,7 +656,7 @@ os.chdir('/tmp')
         } else if (isTa) {
           tableHead.innerHTML = '<tr><th>Lab</th><th>TA</th><th>Time</th></tr>';
         } else {
-          tableHead.innerHTML = '<tr><th>Student</th><th colspan="3">Assigned events</th></tr>';
+          tableHead.innerHTML = '<tr><th>Team</th><th>Student</th><th colspan="2">Assigned events</th></tr>';
         }
       }
 
@@ -718,6 +718,40 @@ os.chdir('/tmp')
           resultsBody.innerHTML = `<tr><td colspan="${columnCount}">No schedule output yet.</td></tr>`;
           return;
         }
+
+        if (mode === 'science') {
+          const preferredTeamOrder = ['A Team', 'B Team'];
+          const groupedRows = new Map();
+          rows.forEach((row) => {
+            const teamName = row.team || 'Unknown Team';
+            if (!groupedRows.has(teamName)) {
+              groupedRows.set(teamName, []);
+            }
+            groupedRows.get(teamName).push(row);
+          });
+
+          const orderedTeams = [
+            ...preferredTeamOrder.filter((team) => groupedRows.has(team)),
+            ...Array.from(groupedRows.keys()).filter((team) => !preferredTeamOrder.includes(team)),
+          ];
+
+          orderedTeams.forEach((teamName) => {
+            const headerRow = document.createElement('tr');
+            headerRow.innerHTML = `<td colspan="4" style="font-weight:700;background:rgba(50,197,255,0.12);">${teamName}</td>`;
+            resultsBody.appendChild(headerRow);
+
+            groupedRows.get(teamName).forEach((row) => {
+              const tr = document.createElement('tr');
+              const eventsText = Array.isArray(row.events)
+                ? row.events.map((event) => `${event.name} (${event.time})`).join(' | ')
+                : 'n/a';
+              tr.innerHTML = `<td>${teamName}</td><td>${row.student}</td><td colspan="2">${eventsText}</td>`;
+              resultsBody.appendChild(tr);
+            });
+          });
+          return;
+        }
+
         rows.forEach((row) => {
           const tr = document.createElement('tr');
           if (mode === 'class') {
@@ -729,7 +763,7 @@ os.chdir('/tmp')
             const eventsText = Array.isArray(row.events)
               ? row.events.map((event) => `${event.name} (${event.time})`).join(' | ')
               : 'n/a';
-            tr.innerHTML = `<td>${row.student}</td><td colspan="3">${eventsText}</td>`;
+            tr.innerHTML = `<td>${row.team ?? 'Unknown Team'}</td><td>${row.student}</td><td colspan="2">${eventsText}</td>`;
           }
           resultsBody.appendChild(tr);
         });

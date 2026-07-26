@@ -1,5 +1,6 @@
 import csv
 import json
+import os
 import random
 from typing import Dict, List, Optional, Tuple
 
@@ -32,7 +33,9 @@ def parse_scitimes(file_path: str) -> List[Dict[str, object]]:
     return events
 
 
-def parse_team_file(file_path: str) -> List[Dict[str, object]]:
+def parse_team_file(file_path: str, team_name: Optional[str] = None) -> List[Dict[str, object]]:
+    if team_name is None:
+        team_name = os.path.splitext(os.path.basename(file_path))[0]
     with open(file_path, newline='', encoding='utf-8') as file:
         reader = csv.DictReader(file)
         students = []
@@ -53,14 +56,20 @@ def parse_team_file(file_path: str) -> List[Dict[str, object]]:
                     prefs[header] = int(value.strip())
                 except Exception:
                     prefs[header] = 3
-            students.append({'name': name, 'grade': row.get('Grade', '').strip(), 'prefs': prefs})
+            students.append({
+                'name': name,
+                'team': team_name,
+                'grade': row.get('Grade', '').strip(),
+                'prefs': prefs,
+            })
     return students
 
 
 def combine_students(team_files: List[str]) -> List[Dict[str, object]]:
     all_students = []
     for path in team_files:
-        all_students.extend(parse_team_file(path))
+        team_name = os.path.splitext(os.path.basename(path))[0]
+        all_students.extend(parse_team_file(path, team_name))
     return all_students
 
 
@@ -107,7 +116,11 @@ def create_individual(students: List[Dict[str, object]], events: List[Dict[str, 
             elif random.random() < 0.4:
                 build_assigned.append(random.choice(build_candidates))
 
-        schedule.append({'student': student['name'], 'events': timed_assigned + build_assigned})
+        schedule.append({
+            'student': student['name'],
+            'team': student.get('team', 'Unknown Team'),
+            'events': timed_assigned + build_assigned,
+        })
 
     return schedule
 
@@ -283,9 +296,11 @@ def build_schedule(events_file: str = 'SciTimes.csv', team_files: Optional[List[
 
 def format_schedule(schedule: List[Dict[str, object]], students: List[Dict[str, object]], events: List[Dict[str, object]]) -> List[Dict[str, object]]:
     event_map = {event['name']: event for event in events}
+    student_teams = {student['name']: student.get('team', 'Unknown Team') for student in students}
     rows = []
     for assignment in schedule:
         row = {
+            'team': assignment.get('team', student_teams.get(assignment['student'], 'Unknown Team')),
             'student': assignment['student'],
             'events': [],
         }
