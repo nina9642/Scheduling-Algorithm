@@ -194,7 +194,7 @@
         <div class="tip-box">
           <strong>New user quick start</strong>
           <ol class="guide-steps">
-            <li><strong>Choose a workflow:</strong> pick either Class scheduling or TA scheduling.</li>
+            <li><strong>Choose a workflow:</strong> pick Violin (Class), TA, or Science scheduling.</li>
             <li><strong>Upload files:</strong> add the matching CSV files shown on this page.</li>
             <li><strong>Run the solver:</strong> click <em>Run scheduling solver</em> and wait for the status message.</li>
             <li><strong>View results:</strong> the table below shows the schedule and score.</li>
@@ -215,22 +215,30 @@
           <div class="mode-row">
             <label><input type="radio" name="mode" value="class" checked /> Class scheduling</label>
             <label><input type="radio" name="mode" value="ta" /> TA scheduling</label>
+            <label><input type="radio" name="mode" value="science" /> Science scheduling</label>
           </div>
 
           <div id="classPanel">
-            <p class="muted">Expected files: Students, Teachers, Masterclasses, Group Classes, Orchestra, and Times. Open <em>Violin scheduling examples</em> above for column definitions.</p>
-            <label>Students CSV<input id="studentsFile" type="file" accept=".csv" /></label>
-            <label>Teachers CSV<input id="teachersFile" type="file" accept=".csv" /></label>
-            <label>Masterclasses CSV<input id="masterclassesFile" type="file" accept=".csv" /></label>
-            <label>Group Classes CSV<input id="groupclassesFile" type="file" accept=".csv" /></label>
-            <label>Orchestra CSV<input id="orchestraFile" type="file" accept=".csv" /></label>
-            <label>Times CSV<input id="timesFile" type="file" accept=".csv" /></label>
+            <p class="muted"><strong>Violin scheduling files:</strong> Students.csv, Teachers.csv, Masterclasses.csv, Group Class.csv, Orchestra.csv, and Times.csv. Open <em>Violin scheduling examples</em> above for column definitions.</p>
+            <label>Students CSV (Students.csv)<input id="studentsFile" type="file" accept=".csv" /></label>
+            <label>Teachers CSV (Teachers.csv)<input id="teachersFile" type="file" accept=".csv" /></label>
+            <label>Masterclasses CSV (Masterclasses.csv)<input id="masterclassesFile" type="file" accept=".csv" /></label>
+            <label>Group Classes CSV (Group Class.csv)<input id="groupclassesFile" type="file" accept=".csv" /></label>
+            <label>Orchestra CSV (Orchestra.csv)<input id="orchestraFile" type="file" accept=".csv" /></label>
+            <label>Times CSV (Times.csv)<input id="timesFile" type="file" accept=".csv" /></label>
           </div>
 
           <div id="taPanel" class="hidden">
-            <p class="muted">Expected files: Lab Schedule and Availability. Open <em>TA scheduling examples</em> above for column definitions.</p>
-            <label>Lab Schedule CSV<input id="labsFile" type="file" accept=".csv" /></label>
-            <label>Availability CSV<input id="availabilityFile" type="file" accept=".csv" /></label>
+            <p class="muted"><strong>TA scheduling files:</strong> Lab Schedule.csv and Availability.csv. Open <em>TA scheduling examples</em> above for column definitions.</p>
+            <label>Lab Schedule CSV (Lab Schedule.csv)<input id="labsFile" type="file" accept=".csv" /></label>
+            <label>Availability CSV (Availability.csv)<input id="availabilityFile" type="file" accept=".csv" /></label>
+          </div>
+
+          <div id="sciencePanel" class="hidden">
+            <p class="muted"><strong>Science scheduling files:</strong> SciTimes.csv, A Team.csv, and B Team.csv. Open <em>Science scheduling examples</em> below for column definitions.</p>
+            <label>SciTimes CSV (SciTimes.csv)<input id="scitimesFile" type="file" accept=".csv" /></label>
+            <label>A Team CSV (A Team.csv)<input id="aTeamFile" type="file" accept=".csv" /></label>
+            <label>B Team CSV (B Team.csv)<input id="bTeamFile" type="file" accept=".csv" /></label>
           </div>
 
           <div style="margin-top: 1rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
@@ -471,16 +479,16 @@
       const progressText = document.getElementById('progressText');
       const runButton = document.getElementById('runButton');
 
-      function showProgress(label, current, total) {
+      function showProgress(label, current, total, detail = '') {
         progressContainer.classList.remove('hidden');
         progressLabel.textContent = label;
         if (total > 0) {
           const pct = Math.min(100, Math.round((current / total) * 100));
           progressFill.style.width = `${pct}%`;
-          progressText.textContent = `${current}/${total}`;
+          progressText.textContent = detail || `${current}/${total}`;
         } else {
           progressFill.style.width = '35%';
-          progressText.textContent = '';
+          progressText.textContent = detail || 'Working…';
         }
       }
 
@@ -493,14 +501,38 @@
       function setupSolverStdout(pyodide) {
         pyodide.setStdout({
           batched: (text) => {
-            const match = text.match(/SOLVER_PROGRESS\s+(\d+)\/(\d+)/);
-            if (match) {
-              showProgress(
-                'Running genetic algorithm…',
-                Number.parseInt(match[1], 10),
-                Number.parseInt(match[2], 10),
-              );
-            }
+            const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
+            lines.forEach((line) => {
+              let match = line.match(/SOLVER_PROGRESS\s+(\d+)\s+\|\s+best=([\-\d.]+)(?:\s+\|\s+stagnation=(\d+)\/(\d+))?/);
+              if (match) {
+                const current = Number.parseInt(match[1], 10);
+                const best = Number(match[2]);
+                const stagnation = match[3] ? Number(match[3]) : null;
+                const maxStagnation = match[4] ? Number(match[4]) : null;
+                const detail = `best=${best}${stagnation !== null ? ` | stagnation ${stagnation}/${maxStagnation}` : ''}`;
+                showProgress('Running genetic algorithm…', current, 0, detail);
+                return;
+              }
+              match = line.match(/SOLVER_PROGRESS\s+(\d+)\/(\d+)(?:\s+best=([\-\d.]+))?(?:\s+stagnation=(\d+)\/(\d+))?/);
+              if (match) {
+                const current = Number.parseInt(match[1], 10);
+                const total = Number.parseInt(match[2], 10);
+                const best = match[3] ? Number(match[3]) : null;
+                const stagnation = match[4] ? Number(match[4]) : null;
+                const maxStagnation = match[5] ? Number(match[5]) : null;
+                const detail = best !== null
+                  ? `best=${best}${stagnation !== null ? ` | stagnation ${stagnation}/${maxStagnation}` : ''}`
+                  : `${current}/${total}`;
+                showProgress('Running genetic algorithm…', current, total, detail);
+                return;
+              }
+              match = line.match(/SOLVER_PROGRESS\s+generation=(\d+)(?:\s+best=([\-\d.]+))?/);
+              if (match) {
+                const current = Number.parseInt(match[1], 10);
+                const detail = match[2] ? `best=${match[2]}` : `generation ${current}`;
+                showProgress('Running genetic algorithm…', current, 0, detail);
+              }
+            });
           },
         });
       }
@@ -534,6 +566,7 @@ if '${moduleName.replace('.py', '')}' in sys.modules:
           ['scheduling1.py', './scheduling1.py'],
           ['violinscheduling.py', './violinscheduling.py'],
           ['TAscheduling.py', './TAscheduling.py'],
+          ['Science.py', './Science.py'],
         ];
         for (let index = 0; index < requiredFiles.length; index += 1) {
           const [name, url] = requiredFiles[index];
@@ -564,9 +597,15 @@ if '/tmp' not in sys.path:
               orchestra: 'Orchestra.csv',
               times: 'Times.csv',
             }
-          : {
+          : mode === 'ta'
+          ? {
               labs: 'Lab Schedule.csv',
               availability: 'Availability.csv',
+            }
+          : {
+              scitimes: 'SciTimes.csv',
+              aTeam: 'A Team.csv',
+              bTeam: 'B Team.csv',
             };
 
         for (const [key, fileName] of Object.entries(fileMap)) {
@@ -590,10 +629,14 @@ os.chdir('/tmp')
         times: document.getElementById('timesFile'),
         labs: document.getElementById('labsFile'),
         availability: document.getElementById('availabilityFile'),
+        scitimes: document.getElementById('scitimesFile'),
+        aTeam: document.getElementById('aTeamFile'),
+        bTeam: document.getElementById('bTeamFile'),
       };
 
       const classPanel = document.getElementById('classPanel');
       const taPanel = document.getElementById('taPanel');
+      const sciencePanel = document.getElementById('sciencePanel');
       const helpTabs = document.querySelectorAll('.help-tab');
       const helpSections = document.querySelectorAll('.help-section');
       const tableHead = document.getElementById('tableHead');
@@ -603,11 +646,18 @@ os.chdir('/tmp')
 
       function setMode(mode) {
         const isClass = mode === 'class';
+        const isTa = mode === 'ta';
+        const isScience = mode === 'science';
         classPanel.classList.toggle('hidden', !isClass);
-        taPanel.classList.toggle('hidden', isClass);
-        tableHead.innerHTML = isClass
-          ? '<tr><th>Class</th><th>Teacher</th><th>Time</th><th>Students</th></tr>'
-          : '<tr><th>Lab</th><th>TA</th><th>Time</th></tr>';
+        taPanel.classList.toggle('hidden', !isTa);
+        sciencePanel.classList.toggle('hidden', !isScience);
+        if (isClass) {
+          tableHead.innerHTML = '<tr><th>Class</th><th>Teacher</th><th>Time</th><th>Students</th></tr>';
+        } else if (isTa) {
+          tableHead.innerHTML = '<tr><th>Lab</th><th>TA</th><th>Time</th></tr>';
+        } else {
+          tableHead.innerHTML = '<tr><th>Student</th><th colspan="3">Assigned events</th></tr>';
+        }
       }
 
       function setHelpPanel(panelId) {
@@ -650,7 +700,9 @@ os.chdir('/tmp')
         const files = {};
         const keys = mode === 'class'
           ? ['students', 'teachers', 'masterclasses', 'groupclasses', 'orchestra', 'times']
-          : ['labs', 'availability'];
+          : mode === 'ta'
+          ? ['labs', 'availability']
+          : ['scitimes', 'aTeam', 'bTeam'];
         for (const key of keys) {
           if (fileInputs[key].files && fileInputs[key].files[0]) {
             files[key] = await readFile(fileInputs[key].files[0]);
@@ -661,7 +713,7 @@ os.chdir('/tmp')
 
       function renderRows(rows, mode) {
         resultsBody.innerHTML = '';
-        const columnCount = mode === 'class' ? 4 : 3;
+        const columnCount = mode === 'class' ? 4 : mode === 'ta' ? 3 : 4;
         if (!rows.length) {
           resultsBody.innerHTML = `<tr><td colspan="${columnCount}">No schedule output yet.</td></tr>`;
           return;
@@ -669,10 +721,15 @@ os.chdir('/tmp')
         rows.forEach((row) => {
           const tr = document.createElement('tr');
           if (mode === 'class') {
-            const students = Array.isArray(row.students) ? row.students.join(", ") : 'n/a';
+            const students = Array.isArray(row.students) ? row.students.join(', ') : 'n/a';
             tr.innerHTML = `<td>${row.classId}</td><td>${row.teacher}</td><td>${row.time}</td><td>${students}</td>`;
-          } else {
+          } else if (mode === 'ta') {
             tr.innerHTML = `<td>${row.lab}</td><td>${row.ta}</td><td>${row.time ?? 'n/a'}</td>`;
+          } else {
+            const eventsText = Array.isArray(row.events)
+              ? row.events.map((event) => `${event.name} (${event.time})`).join(' | ')
+              : 'n/a';
+            tr.innerHTML = `<td>${row.student}</td><td colspan="3">${eventsText}</td>`;
           }
           resultsBody.appendChild(tr);
         });
@@ -690,7 +747,7 @@ os.chdir('/tmp')
           setupSolverStdout(pyodide);
 
           if (mode === 'class') {
-            showProgress('Running genetic algorithm…', 0, 100);
+            showProgress('Running genetic algorithm…', 0, 0);
             statusEl.textContent = 'Running class scheduling solver…';
             await reloadPythonModule(pyodide, 'violinscheduling.py');
             const resultText = await pyodide.runPythonAsync(`
@@ -705,7 +762,6 @@ async def main():
             'classId': str(row[0]),
             'teacher': str(row[2]),
             'time': str(row[1]),
-            'classLevel': int(solver.class_levels[row[0]]),
             'students': [str(student) for student in row[3]],
         })
     return json.dumps({'rows': rows, 'score': float(solver.best_score)})
@@ -716,8 +772,8 @@ await main()
             renderRows(result.rows, 'class');
             scoreEl.textContent = `Score: ${Number(result.score).toFixed(2)}`;
             statusEl.textContent = `Solved ${result.rows.length} classes successfully.`;
-          } else {
-            showProgress('Running genetic algorithm…', 0, 100);
+          } else if (mode === 'ta') {
+            showProgress('Running genetic algorithm…', 0, 0);
             statusEl.textContent = 'Running TA scheduling solver…';
             await reloadPythonModule(pyodide, 'TAscheduling.py');
             const resultText = await pyodide.runPythonAsync(`
@@ -734,13 +790,9 @@ async def main():
         for row in reader:
             lab_times[row[0]] = (row[2], row[3])
 
-    ta_names = solver.availability[0][1:]
     rows = []
     for lab_id, ta_name in solver.w:
         start, end = lab_times.get(lab_id, ('n/a', 'n/a'))
-        if isinstance(ta_name, int) or (isinstance(ta_name, str) and ta_name.isdigit()):
-            index = int(ta_name)
-            ta_name = ta_names[index - 1] if 1 <= index <= len(ta_names) else ta_name
         rows.append({
             'lab': str(lab_id),
             'ta': str(ta_name),
@@ -754,6 +806,25 @@ await main()
             renderRows(result.rows, 'ta');
             scoreEl.textContent = `Score: ${Number(result.score).toFixed(2)}`;
             statusEl.textContent = `Solved ${result.rows.length} lab assignments successfully.`;
+          } else {
+            showProgress('Running genetic algorithm…', 0, 0);
+            statusEl.textContent = 'Running science scheduling solver…';
+            await reloadPythonModule(pyodide, 'Science.py');
+            const resultText = await pyodide.runPythonAsync(`
+import json
+import Science as solver
+
+async def main():
+    schedule, score, students, events = solver.build_schedule()
+    rows = solver.format_schedule(schedule, students, events)
+    return json.dumps({'rows': rows, 'score': float(score)})
+
+await main()
+`);
+            const result = JSON.parse(resultText);
+            renderRows(result.rows, 'science');
+            scoreEl.textContent = `Score: ${Number(result.score).toFixed(2)}`;
+            statusEl.textContent = `Solved ${result.rows.length} science student schedules successfully.`;
           }
         } catch (error) {
           statusEl.textContent = error.message;
@@ -793,7 +864,7 @@ await main()
               fileInputs[key].files = dataTransfer.files;
             });
             statusEl.textContent = 'Sample class files loaded. Click “Run scheduling solver” to generate a schedule.';
-          } else {
+          } else if (mode === 'ta') {
             const [labs, availability] = await Promise.all([
               fetchText('Lab Schedule.csv'),
               fetchText('Availability.csv'),
@@ -808,6 +879,23 @@ await main()
               fileInputs[key].files = dataTransfer.files;
             });
             statusEl.textContent = 'Sample TA files loaded. Click “Run scheduling solver” to generate a schedule.';
+          } else {
+            const [scitimes, aTeam, bTeam] = await Promise.all([
+              fetchText('SciTimes.csv'),
+              fetchText('A Team.csv'),
+              fetchText('B Team.csv'),
+            ]);
+            const fileMap = {
+              scitimes: new File([scitimes], 'SciTimes.csv', { type: 'text/csv' }),
+              aTeam: new File([aTeam], 'A Team.csv', { type: 'text/csv' }),
+              bTeam: new File([bTeam], 'B Team.csv', { type: 'text/csv' }),
+            };
+            Object.entries(fileMap).forEach(([key, file]) => {
+              const dataTransfer = new DataTransfer();
+              dataTransfer.items.add(file);
+              fileInputs[key].files = dataTransfer.files;
+            });
+            statusEl.textContent = 'Sample science files loaded. Click “Run scheduling solver” to generate a schedule.';
           }
         } catch (error) {
           statusEl.textContent = 'Unable to load samples from the repository.';
