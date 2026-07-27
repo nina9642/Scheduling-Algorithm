@@ -551,6 +551,7 @@ def format_schedule(schedule: List[Dict[str, object]], students: List[Dict[str, 
 def format_schedule_by_event(schedule: List[Dict[str, object]], students: List[Dict[str, object]], events: List[Dict[str, object]]) -> List[Dict[str, object]]:
     preferred_team_order = ['A Team', 'B Team']
     student_teams = {student['name']: student.get('team', 'Unknown Team') for student in students}
+    all_teams = sorted({student.get('team', 'Unknown Team') for student in students})
     event_assignments: Dict[str, Dict[str, List[str]]] = {}
 
     for assignment in schedule:
@@ -564,43 +565,33 @@ def format_schedule_by_event(schedule: List[Dict[str, object]], students: List[D
             event_assignments[event_name][team_name].append(student_name)
 
     rows = []
-    seen_events = set()
+    scitimes_event_names = {event['name'] for event in events}
+    ordered_teams = [
+        *preferred_team_order,
+        *[team for team in all_teams if team not in preferred_team_order],
+    ]
 
-    for event in events:
-        event_name = event['name']
-        seen_events.add(event_name)
-        team_map = event_assignments.get(event_name, {})
-        ordered_teams = [
-            *[team for team in preferred_team_order if team in team_map],
-            *[team for team in team_map.keys() if team not in preferred_team_order],
-        ]
+    # Build separate team blocks: all A Team events first, then B Team events, then any remaining teams.
+    for team_name in ordered_teams:
+        rows.append({'event': f'--- {team_name} ---', 'time': '', 'team': '', 'students': []})
 
-        if not ordered_teams:
-            rows.append({'event': event_name, 'time': event['time'] or 'build', 'team': '—', 'students': []})
-            continue
-
-        for index, team_name in enumerate(ordered_teams):
+        for event in events:
+            event_name = event['name']
+            team_map = event_assignments.get(event_name, {})
             rows.append({
-                'event': event_name if index == 0 else '',
-                'time': (event['time'] or 'build') if index == 0 else '',
+                'event': event_name,
+                'time': event['time'] or 'build',
                 'team': team_name,
                 'students': team_map.get(team_name, []),
             })
 
-    for event_name, team_map in event_assignments.items():
-        if event_name in seen_events:
-            continue
-        ordered_teams = [
-            *[team for team in preferred_team_order if team in team_map],
-            *[team for team in team_map.keys() if team not in preferred_team_order],
-        ]
-        if not ordered_teams:
-            rows.append({'event': event_name, 'time': 'unknown', 'team': '—', 'students': []})
-            continue
-        for index, team_name in enumerate(ordered_teams):
+        # Include any assigned events that were not listed in SciTimes, at the bottom of each team block.
+        for event_name, team_map in event_assignments.items():
+            if event_name in scitimes_event_names:
+                continue
             rows.append({
-                'event': event_name if index == 0 else '',
-                'time': 'unknown' if index == 0 else '',
+                'event': event_name,
+                'time': 'unknown',
                 'team': team_name,
                 'students': team_map.get(team_name, []),
             })

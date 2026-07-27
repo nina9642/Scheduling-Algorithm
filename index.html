@@ -334,22 +334,18 @@
         <div class="guide">
           <h3 style="margin-top: 1.25rem;">What is a CSV file?</h3>
           <p style="margin-top: 0rem; margin-bottom: 0rem;">A CSV (<strong>C</strong>omma-<strong>S</strong>eparated <strong>V</strong>alues) file is a plain-text spreadsheet. Commas separate columns, the first row is the header, and each following row is one record.</p>
-          <div class="tip-box" style="margin-top: 0.85rem;">
-            <p><strong>Example row:</strong> <code>1,John Doe,8,V0812</code></p>
-            <ul style="margin-top: 0.5rem;">
-              <li>Column 1: <code>1</code> (ID)</li>
-              <li>Column 2: <code>John Doe</code> (name)</li>
-              <li>Column 3: <code>8</code> (book level)</li>
-              <li>Column 4: <code>V0812</code> (piece)</li>
-            </ul>
-            <p style="margin-top: 0.65rem;">Two commas in a row, like <code>3,4,,</code>, means an empty cell. That is normal for optional columns.</p>
+          <div class="tip-box">
+            <p style="margin-top: 0rem; margin-bottom: 0rem;"><strong>Example:</strong>
+            <br><code>STU ID,Name,Book,Piece</code>
+            <br><code>1,John Doe,8,V0812</code>
+            <br><code>2,Jane Smith,7,V0711</code></p>
           </div>
 
           <div class="example-block" style="margin-top: 1.25rem;">
             <span class="example-title">Google Sheets</span>
             <ol>
               <li>Open your spreadsheet in Google Sheets.</li>
-              <li>Make sure the first row contains your column names (for example, <code>ID</code>, <code>Name</code>, <code>Book</code>).</li>
+              <li>Make sure the first row contains your column names (for example, <code>STU ID</code>, <code>Name</code>, <code>Book</code>).</li>
               <li>Click <strong>File</strong> → <strong>Download</strong> → <strong>Comma Separated Values (.csv)</strong>.</li>
               <li>Repeat for each file you need, or keep one sheet per file and download them one at a time.</li>
               <li>Upload the downloaded <code>.csv</code> files into this app.</li>
@@ -401,12 +397,12 @@
             <span class="example-title">Students.csv</span>
             <p class="muted">One row per student.</p>
             <ul class="column-legend">
-              <li><code><strong>ID</strong></code> — unique student number used everywhere else in your files</li>
+              <li><code><strong>STU ID</strong></code> — unique student ID used everywhere else in your files</li>
               <li><code><strong>Name</strong></code> — student’s full name (for your records; the solver mainly uses the ID)</li>
               <li><code><strong>Book</strong></code> — skill level or book number (higher numbers usually mean more advanced)</li>
               <li><code><strong>Piece</strong></code> — optional piece code or name</li>
             </ul>
-            <div class="csv-sample">ID,Name,Book,Piece
+            <div class="csv-sample">STU ID,Name,Book,Piece
 1,James,8,V0812
 2,Kate,8,V0805
 3,Emilyn,8,V0805</div>
@@ -417,11 +413,11 @@
             <span class="example-title">Teachers.csv</span>
             <p class="muted">One row per teacher.</p>
             <ul class="column-legend">
-              <li><code><strong>ID</strong></code> — unique teacher number</li>
+              <li><code><strong>Teacher ID</strong></code> — unique teacher ID</li>
               <li><code><strong>Name</strong></code> — teacher’s name</li>
               <li><code><strong>Book</strong></code> — highest book level that teacher can teach</li>
             </ul>
-            <div class="csv-sample">ID,Name,Book
+            <div class="csv-sample">Teacher ID,Name,Book
 1,Tal,8
 2,Kirsten,7
 3,Teri,6</div>
@@ -432,11 +428,11 @@
             <span class="example-title">Masterclasses.csv</span>
             <p class="muted">Small group classes with up to four students.</p>
             <ul class="column-legend">
-              <li><code><strong>Group ID</strong></code> — unique class ID (appears in the output table)</li>
+              <li><code><strong>Class ID</strong></code> — unique masterclass ID (appears in the output table)</li>
               <li><code><strong>Level</strong></code> — required book level for this class</li>
               <li><code><strong>Student 1</strong></code> <strong>to</strong> <code><strong>Student 4</strong></code> — student IDs from <code>Students.csv</code>; leave unused slots blank</li>
             </ul>
-            <div class="csv-sample">Group ID,Level,Student 1,Student 2,Student 3,Student 4
+            <div class="csv-sample">Class ID,Level,Student 1,Student 2,Student 3,Student 4
 1,8,1,2,,
 2,8,3,4,,
 3,7,5,6,,</div>
@@ -447,10 +443,10 @@
             <span class="example-title">Group Class.csv</span>
             <p class="muted">Larger shared classes defined by book levels.</p>
             <ul class="column-legend">
-              <li><code><strong>ID</strong></code> — unique class ID</li>
+              <li><code><strong>Class ID</strong></code> — unique group class ID</li>
               <li><code><strong>Book 1</strong></code>, <code><strong>Book 2</strong></code> — book levels included in this group; leave extra columns blank if unused</li>
             </ul>
-            <div class="csv-sample">ID,Book 1,Book 2
+            <div class="csv-sample">Class ID,Book 1,Book 2
 22,8,7
 23,6,5
 24,4,</div>
@@ -461,10 +457,10 @@
             <span class="example-title">Orchestra.csv</span>
             <p class="muted">Orchestra sections by book level.</p>
             <ul class="column-legend">
-              <li><code><strong>ID</strong></code> — unique orchestra class ID</li>
+              <li><code><strong>Class ID</strong></code> — unique orchestra ID</li>
               <li><code><strong>Book 1</strong></code>, <code><strong>Book 2</strong></code>, <code><strong>Book 3</strong></code> — book levels in this orchestra; leave unused book columns blank</li>
             </ul>
-            <div class="csv-sample">ID,Book 1,Book 2, Book 3
+            <div class="csv-sample">Class ID,Book 1,Book 2, Book 3
 27,8,7,6
 28,5,4,,
 29,3,2,,</div>
@@ -475,10 +471,10 @@
             <span class="example-title">Times.csv</span>
             <p class="muted">Available time slots during the day.</p>
             <ul class="column-legend">
-              <li><code><strong>ID</strong></code> — unique time-slot number stored in the schedule</li>
+              <li><code><strong>Time ID</strong></code> — unique time-slot number stored in the schedule</li>
               <li><code><strong>Time</strong></code> — hour label shown in the output (for example, 9 means 9:00)</li>
             </ul>
-            <div class="csv-sample">ID,Time
+            <div class="csv-sample">Time ID,Time
 1,9
 2,10
 3,11</div>
@@ -504,7 +500,8 @@
             <div class="csv-sample">Lab Name,Day,Start,End
 001L,3,8:00,9:50
 002L,3,10:00,11:50
-003L,3,15:15,17:05</div>
+015L,5,10:00,11:50
+022L,2,12:00,13:50</div>
             <p class="csv-row-label">Row 1 above means: lab <strong>001L</strong> meets on day <strong>3</strong> from <strong>8:00</strong> to <strong>9:50</strong>.</p>
           </div>
 
@@ -518,8 +515,9 @@
             <div class="csv-sample">Lab Name,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W
 001L,x,,x,x,,x,,x,,,,,,x,,,,x,,x,,,x
 002L,x,,,,,,x,,,,,,,x,x,,,,,,,,
-003L,,x,,,x,,,,x,,x,,x,,,,,,,x,,,x</div>
-            <p class="csv-row-label">Row 1 above means: for lab <strong>001L</strong>, TAs <strong>A</strong>, <strong>C</strong>, and <strong>D</strong> are available. The empty cells between commas mean those TAs are not available.</p>
+015L,,x,,x,,,,,,,,,,x,,,x,,,,x,,
+022L,x,,x,,,x,,,,,,,,,,,x,,x,,,,</div>
+            <p class="csv-row-label">Row 1 above means: for lab <strong>001L</strong>, TAs <strong>A</strong>, <strong>C</strong>, <strong>D</strong>, <strong>F</strong>, <strong>H</strong>, <strong>K</strong>, <strong>N</strong>, <strong>Q</strong>, <strong>R</strong>, <strong>T</strong>, and <strong>W</strong> are available. The empty cells between commas mean those TAs are not available.</p>
             <p class="muted" style="margin-top: 0.75rem;">The finished schedule shows the lab, the assigned TA letter, and the lab time. Example output row: <code>001L | A | 8:00 - 9:50</code>.</p>
           </div>
         </div>
@@ -535,42 +533,29 @@
             <p class="muted">Event list, capacity, and time slot.</p>
             <ul class="column-legend">
               <li><code><strong>Event</strong></code> — science event name shown in the output schedule</li>
-              <li><code><strong># Students</strong></code> — maximum students allowed in that event</li>
+              <li><code><strong># Students</strong></code> — number of students in that event</li>
               <li><code><strong>Times</strong></code> — event time label; use <code>N/A</code> for build-only events</li>
             </ul>
             <div class="csv-sample">Event,# Students,Times 
 Circuit,2,8:30-9:20
 Dynamic,2,8:30-9:20
-Water,2,8:30-9:20</div>
+Codebusters,3,11:45-12:35
+Bungee,2,N/A</div>
             <p class="csv-row-label">Row 1 above means: <strong>Circuit</strong> has <strong>2</strong> students and runs during <strong>8:30-9:20</strong>.</p>
           </div>
 
           <div class="example-block">
-            <span class="example-title">A Team.csv</span>
-            <p class="muted">One row per A Team student with ranked event preferences.</p>
+            <span class="example-title">A Team.csv</span>  <span class="example-title">B Team.csv</span>
+            <p class="muted">These two files use the exact same format, but must be uploaded as two separate files: one for A Team and one for B Team.</p>
             <ul class="column-legend">
               <li><code><strong>Name</strong></code> — student name</li>
-              <li>Each event column (for example <code>Experimental</code>) should be ranked <code>1</code>, <code>2</code>, or <code>3</code></li>
+              <li>Each event column (for example <code>Codebusters</code>) should be ranked <code>1</code>, <code>2</code>, or <code>3</code></li>
             </ul>
-            <div class="csv-sample">Name,Circuit,Experimental,Bungee
-Nina,1,3,3
-Alon,3,2,1
-David,3,3,1</div>
-            <p class="csv-row-label">Row 1 above means: <strong>Nina</strong> has preference rankings across all events (1 = strongest preference, 3 = weakest preference).</p>
-          </div>
-
-          <div class="example-block">
-            <span class="example-title">B Team.csv</span>
-            <p class="muted">Same format as <code>A Team.csv</code> for B Team students.</p>
-            <ul class="column-legend">
-              <li>Use the same event columns as <code>A Team.csv</code> so preferences match <code>SciTimes.csv</code></li>
-              <li>Keep rankings as <code>1</code>, <code>2</code>, or <code>3</code></li>
-            </ul>
-            <div class="csv-sample">Name,Circuit,Experimental,Bungee
-Alice,3,1,3
-Louise,1,2,2
-Bibhuti,2,3,3</div>
-            <p class="csv-row-label">Row 1 above means: <strong>Alice</strong> has ranked preferences for each event using the same 1–3 scale.</p>
+            <div class="csv-sample">Name,Circuit,Dynamic,Codebusters,Bungee
+Nina,1,3,1,3
+Alon,3,2,2,1
+David,3,1,3,1</div>
+            <p class="csv-row-label">Row 1 above means: <strong>Nina</strong> has preference rankings across all events (1 = strongest preference, 3 = weakest preference). Use this same structure for both team files.</p>
           </div>
         </div>
       </section>
@@ -839,6 +824,12 @@ os.chdir('/tmp')
         if (mode === 'science') {
           if (Array.isArray(options.eventRows) && options.eventRows.length) {
             options.eventRows.forEach((row) => {
+              if ((row.team || '') === '' && (row.event || '').startsWith('---')) {
+                const headerTr = document.createElement('tr');
+                headerTr.innerHTML = `<td colspan="4" style="font-weight:700;background:rgba(50,197,255,0.12);">${row.event.replace(/---/g, '').trim()}</td>`;
+                resultsBody.appendChild(headerTr);
+                return;
+              }
               const tr = document.createElement('tr');
               const students = Array.isArray(row.students) && row.students.length
                 ? row.students.join(', ')
