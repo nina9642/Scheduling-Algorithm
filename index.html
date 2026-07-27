@@ -54,7 +54,7 @@
       #taPanel label,
       #sciencePanel label {
         display: block;
-        margin-bottom: 0.6rem;
+        margin-bottom: 1rem;
       }
       button {
         border: none;
@@ -116,9 +116,9 @@
       }
       .progress-text { margin-top: 0.35rem; color: #9edcff; font-size: 0.9rem; }
       .muted { color: #8fb0c8; font-size: 0.95rem; }
-      .mode-row { display: flex; gap: 1rem; flex-wrap: wrap; margin: 0.85rem 0 1rem; }
+      .mode-row { display: flex; gap: 1rem; flex-wrap: wrap; margin: 2rem 0 2rem; }
       .hidden { display: none; }
-      .guide { margin-top: 1rem; display: grid; gap: 1.25rem; }
+      .guide { margin-top: 1rem; display: grid; gap: 1.1rem; }
       .guide h3 { margin: 0 0 0.5rem; font-size: 1.1rem; }
       .guide h4 { margin: 0 0 0.45rem; font-size: 1rem; color: #d8ecff; }
       .guide p, .guide li { line-height: 1.6; }
@@ -153,21 +153,25 @@
         font-weight: 700;
       }
       .column-legend {
-        display: grid;
-        gap: 0.45rem;
-        margin: 0.75rem 0 0;
-        padding: 0;
-        list-style: none;
+        margin: 0.35rem 0 0;
+        padding-left: 1.25rem;
+        list-style: disc;
+        color: #8fb0c8;
+        font-size: 0.95rem;
       }
       .column-legend li {
-        padding: 0.55rem 0.75rem;
-        border-radius: 10px;
-        background: rgba(7, 17, 31, 0.55);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
       }
       .column-legend code {
-        color: #5eead4;
-        font-weight: 700;
+        color: inherit;
+        font-weight: inherit;
+        font-family: inherit;
+        font-size: inherit;
+        background: none;
+        padding: 0;
       }
       .csv-sample {
         margin-top: 0.75rem;
@@ -184,6 +188,11 @@
         color: #8fb0c8;
         font-size: 0.82rem;
         margin-top: 0.45rem;
+      }
+      .example-block .muted,
+      .example-block .column-legend,
+      .example-block .csv-row-label {
+        color: #f4f7fb;
       }
       .tip-box {
         padding: 0.8rem 0.95rem;
@@ -230,7 +239,7 @@
   <body>
     <div class="container">
       <section class="hero">
-        <h1>Your Super Schedule Solving Solution!</h1>
+        <h1 style="margin-block-start: 0rem;">Your Super Schedule Solving Solution!</h1>
         <p class="muted">Built for music camp scheduling, TA scheduling, and Science Olympiad scheduling.</p>
         <div class="tip-box">
           <strong>Quick start</strong>
@@ -244,7 +253,7 @@
           <summary>Need help setting up?</summary>
           <nav class="category-nav" aria-label="Help topics">
             <button type="button" class="help-tab" data-panel="helpExport">Export CSV files</button>
-            <button type="button" class="help-tab" data-panel="helpClassExamples">Music Camp examples</button>
+            <button type="button" class="help-tab" data-panel="helpClassExamples">Music camp examples</button>
             <button type="button" class="help-tab" data-panel="helpTaExamples">TA examples</button>
             <button type="button" class="help-tab" data-panel="helpScienceExamples">Science examples</button>
           </nav>
@@ -253,7 +262,7 @@
 
       <div class="grid">
         <section class="card">
-          <h2>1. Workflow + Files</h2>
+          <h2 style="margin-block-start: 0rem;">1. Choose & Upload</h2>
           <div class="mode-row">
             <label><input type="radio" name="mode" value="class" checked /> Music Camp</label>
             <label><input type="radio" name="mode" value="ta" /> TA</label>
@@ -261,7 +270,6 @@
           </div>
 
           <div id="classPanel">
-            <p class="muted"><strong>Violin scheduling files:</strong> Students.csv, Teachers.csv, Masterclasses.csv, Group Class.csv, Orchestra.csv, and Times.csv. Open <em>Violin scheduling examples</em> above for column definitions.</p>
             <label>Students CSV<input id="studentsFile" type="file" accept=".csv" /></label>
             <label>Teachers CSV<input id="teachersFile" type="file" accept=".csv" /></label>
             <label>Masterclasses CSV<input id="masterclassesFile" type="file" accept=".csv" /></label>
@@ -271,13 +279,11 @@
           </div>
 
           <div id="taPanel" class="hidden">
-            <p class="muted"><strong>TA scheduling files:</strong> Lab Schedule.csv and Availability.csv. Open <em>TA scheduling examples</em> above for column definitions.</p>
             <label>Lab Schedule CSV<input id="labsFile" type="file" accept=".csv" /></label>
             <label>Availability CSV<input id="availabilityFile" type="file" accept=".csv" /></label>
           </div>
 
           <div id="sciencePanel" class="hidden">
-            <p class="muted"><strong>Science scheduling files:</strong> SciTimes.csv, A Team.csv, and B Team.csv. Open <em>Science scheduling examples</em> below for column definitions.</p>
             <label>SciTimes CSV<input id="scitimesFile" type="file" accept=".csv" /></label>
             <label>A Team CSV<input id="aTeamFile" type="file" accept=".csv" /></label>
             <label>B Team CSV<input id="bTeamFile" type="file" accept=".csv" /></label>
@@ -299,11 +305,11 @@
         </section>
 
         <section class="card">
-          <h2>2. Results</h2>
+          <h2 style="margin-block-start: 0rem;">2. Results</h2>
           <p class="muted">Your best schedule appears here.</p>
           <div style="margin-bottom: 1rem; display: flex; gap: 0.75rem;">
-            <button id="copyButton" type="button">📋 Copy Schedule</button>
-            <button id="downloadButton" type="button">⬇️ Download CSV</button>
+            <button id="copyButton" type="button">Copy Schedule</button>
+            <button id="downloadButton" type="button">Download Schedule</button>
           </div>
           <table>
             <thead>
@@ -319,7 +325,7 @@
         <h2>Export CSV files from Google Sheets or Excel</h2>
         <div class="guide">
           <h3 style="margin-top: 1.25rem;">What is a CSV file?</h3>
-          <p>A CSV (<strong>C</strong>omma-<strong>S</strong>eparated <strong>V</strong>alues) file is a plain-text spreadsheet. Commas separate columns, the first row is the header, and each following row is one record.</p>
+          <p style="margin-top: 0rem; margin-bottom: 0rem;">A CSV (<strong>C</strong>omma-<strong>S</strong>eparated <strong>V</strong>alues) file is a plain-text spreadsheet. Commas separate columns, the first row is the header, and each following row is one record.</p>
           <div class="tip-box" style="margin-top: 0.85rem;">
             <p><strong>Example row:</strong> <code>1,John Doe,8,V0812</code></p>
             <ul style="margin-top: 0.5rem;">
@@ -357,7 +363,7 @@
           <ul style="margin-top: 1rem;">
             <li><strong>Use separate files.</strong> This app expects one CSV per category (Students, Teachers, and so on), not one workbook with every sheet combined.</li>
             <li><strong>Keep the header row.</strong> Do not delete the top row of column names.</li>
-            <li><strong>Match the example formats</strong> in the Violin, TA, or Science scheduling tabs above.</li>
+            <li><strong>Match the example formats</strong> in the Music Camp, TA, or Science scheduling tabs above.</li>
           </ul>
         </div>
       </section>
@@ -366,7 +372,7 @@
         <h2>How the genetic algorithm works</h2>
         <div class="guide">
           <p>This app uses a <strong>genetic algorithm</strong>, a search method inspired by evolution in nature. Instead of trying every possible schedule by hand, the computer creates many candidate schedules, keeps the good ones, and improves them over time.</p>
-          <ol>
+          <ol style="margin-top: 0rem; margin-bottom: 0rem;">
             <li><strong>Start with random schedules.</strong> The solver builds a large population of possible assignments (for example, which teacher gets which class, or which TA covers which lab).</li>
             <li><strong>Score each schedule.</strong> Every candidate gets a fitness score. Schedules with overlapping assignments, unavailable people, or uneven workloads score lower.</li>
             <li><strong>Keep the best candidates.</strong> The highest-scoring schedules are selected to “reproduce” into the next generation.</li>
@@ -379,7 +385,7 @@
       </section>
 
       <section id="helpClassExamples" class="card help-section hidden">
-        <h2>Violin scheduling example files</h2>
+        <h2>Music Camp scheduling example files</h2>
         <p class="muted">Use these formats for music camp scheduling. You need all six files. Student IDs in class files must match <code>Students.csv</code>, and teacher IDs must match <code>Teachers.csv</code>.</p>
 
         <div class="guide">
@@ -387,10 +393,10 @@
             <span class="example-title">Students.csv</span>
             <p class="muted">One row per student.</p>
             <ul class="column-legend">
-              <li><code>ID</code> — unique student number used everywhere else in your files</li>
-              <li><code>Name</code> — student’s full name (for your records; the solver mainly uses the ID)</li>
-              <li><code>Book</code> — skill level or book number (higher numbers usually mean more advanced)</li>
-              <li><code>Piece</code> — optional piece code or name</li>
+              <li><code><strong>ID</strong></code> — unique student number used everywhere else in your files</li>
+              <li><code><strong>Name</strong></code> — student’s full name (for your records; the solver mainly uses the ID)</li>
+              <li><code><strong>Book</strong></code> — skill level or book number (higher numbers usually mean more advanced)</li>
+              <li><code><strong>Piece</strong></code> — optional piece code or name</li>
             </ul>
             <div class="csv-sample">ID,Name,Book,Piece
 1,Jason,8,V0812
@@ -403,9 +409,9 @@
             <span class="example-title">Teachers.csv</span>
             <p class="muted">One row per teacher.</p>
             <ul class="column-legend">
-              <li><code>ID</code> — unique teacher number</li>
-              <li><code>Name</code> — teacher’s name</li>
-              <li><code>Book</code> — highest book level that teacher can teach</li>
+              <li><code><strong>ID</strong></code> — unique teacher number</li>
+              <li><code><strong>Name</strong></code> — teacher’s name</li>
+              <li><code><strong>Book</strong></code> — highest book level that teacher can teach</li>
             </ul>
             <div class="csv-sample">ID,Name,Book
 1,Tal,8
@@ -418,9 +424,9 @@
             <span class="example-title">Masterclasses.csv</span>
             <p class="muted">Small group classes with up to four students.</p>
             <ul class="column-legend">
-              <li><code>Group ID</code> — unique class ID (appears in the output table)</li>
-              <li><code>Level</code> — required book level for this class</li>
-              <li><code>Student 1</code> to <code>Student 4</code> — student IDs from <code>Students.csv</code>; leave unused slots blank</li>
+              <li><code><strong>Group ID</strong></code> — unique class ID (appears in the output table)</li>
+              <li><code><strong>Level</strong></code> — required book level for this class</li>
+              <li><code><strong>Student 1</strong></code> <strong>to</strong> <code><strong>Student 4</strong></code> — student IDs from <code>Students.csv</code>; leave unused slots blank</li>
             </ul>
             <div class="csv-sample">Group ID,Level,Student 1,Student 2,Student 3,Student 4
 1,8,1,2,,
@@ -433,8 +439,8 @@
             <span class="example-title">Group Class.csv</span>
             <p class="muted">Larger shared classes defined by book levels.</p>
             <ul class="column-legend">
-              <li><code>ID</code> — unique class ID</li>
-              <li><code>Book 1</code>, <code>Book 2</code> — book levels included in this group; leave extra columns blank if unused</li>
+              <li><code><strong>ID</strong></code> — unique class ID</li>
+              <li><code><strong>Book 1</strong></code>, <code><strong>Book 2</strong></code> — book levels included in this group; leave extra columns blank if unused</li>
             </ul>
             <div class="csv-sample">ID,Book 1,Book 2
 22,8,7
@@ -447,8 +453,8 @@
             <span class="example-title">Orchestra.csv</span>
             <p class="muted">Orchestra sections by book level.</p>
             <ul class="column-legend">
-              <li><code>ID</code> — unique orchestra class ID</li>
-              <li><code>Book 1</code>, <code>Book 2</code>, <code>Book 3</code> — book levels in this orchestra; leave unused book columns blank</li>
+              <li><code><strong>ID</strong></code> — unique orchestra class ID</li>
+              <li><code><strong>Book 1</strong></code>, <code><strong>Book 2</strong></code>, <code><strong>Book 3</strong></code> — book levels in this orchestra; leave unused book columns blank</li>
             </ul>
             <div class="csv-sample">ID,Book 1,Book 2, Book 3
 27,8,7,6
@@ -461,8 +467,8 @@
             <span class="example-title">Times.csv</span>
             <p class="muted">Available time slots during the day.</p>
             <ul class="column-legend">
-              <li><code>ID</code> — unique time-slot number stored in the schedule</li>
-              <li><code>Time</code> — hour label shown in the output (for example, 9 means 9:00)</li>
+              <li><code><strong>ID</strong></code> — unique time-slot number stored in the schedule</li>
+              <li><code><strong>Time</strong></code> — hour label shown in the output (for example, 9 means 9:00)</li>
             </ul>
             <div class="csv-sample">ID,Time
 1,9
@@ -482,10 +488,10 @@
             <span class="example-title">Lab Schedule.csv</span>
             <p class="muted">One row per lab section that needs a TA.</p>
             <ul class="column-legend">
-              <li><code>Lab Name</code> — lab section code (for example, 001L)</li>
-              <li><code>Day</code> — day of the week as a number (for example, 2 = Tuesday, 3 = Wednesday)</li>
-              <li><code>Start</code> — lab start time in <code>H:MM</code> or <code>HH:MM</code> format</li>
-              <li><code>End</code> — lab end time in the same format</li>
+              <li><code><strong>Lab Name</strong></code> — lab section code (for example, 001L)</li>
+              <li><code><strong>Day</strong></code> — day of the week as a number (for example, 2 = Tuesday, 3 = Wednesday)</li>
+              <li><code><strong>Start</strong></code> — lab start time in <code>H:MM</code> or <code>HH:MM</code> format</li>
+              <li><code><strong>End</strong></code> — lab end time in the same format</li>
             </ul>
             <div class="csv-sample">Lab Name,Day,Start,End
 001L,3,8:00,9:50
@@ -498,8 +504,8 @@
             <span class="example-title">Availability.csv</span>
             <p class="muted">Shows which TAs can cover which labs. Each TA gets a column letter.</p>
             <ul class="column-legend">
-              <li><code>Lab Name</code> — must match a lab from <code>Lab Schedule.csv</code></li>
-              <li><code>A</code>, <code>B</code>, <code>C</code>, … — one column per TA; put <code>x</code> if that TA is available, or leave the cell blank if not</li>
+              <li><code><strong>Lab Name</strong></code> — must match a lab from <code>Lab Schedule.csv</code></li>
+              <li><code><strong>A</strong></code>, <code><strong>B</strong></code>, <code><strong>C</strong></code>, … — one column per TA; put <code>x</code> if that TA is available, or leave the cell blank if not</li>
             </ul>
             <div class="csv-sample">Lab Name,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W
 001L,x,,x,x,,x,,x,,,,,,x,,,,x,,x,,,x
@@ -520,9 +526,9 @@
             <span class="example-title">SciTimes.csv</span>
             <p class="muted">Event list, capacity, and time slot.</p>
             <ul class="column-legend">
-              <li><code>Event</code> — science event name shown in the output schedule</li>
-              <li><code>Max Students</code> — maximum students allowed in that event</li>
-              <li><code>Time</code> — event time label; use <code>N/A</code> for build-only events</li>
+              <li><code><strong>Event</strong></code> — science event name shown in the output schedule</li>
+              <li><code><strong>Max # Students</strong></code> — maximum students allowed in that event</li>
+              <li><code><strong>Time</strong></code> — event time label; use <code>N/A</code> for build-only events</li>
             </ul>
             <div class="csv-sample">Event,Max # Students,Times
 Circuit,2,8:30-9:20
@@ -535,7 +541,7 @@ Water,2,8:30-9:20</div>
             <span class="example-title">A Team.csv</span>
             <p class="muted">One row per A Team student with ranked event preferences.</p>
             <ul class="column-legend">
-              <li><code>Name</code> — student name</li>
+              <li><code><strong>Name</strong></code> — student name</li>
               <li>Each event column (for example <code>Experimental</code>) should be ranked <code>1</code>, <code>2</code>, or <code>3</code></li>
             </ul>
             <div class="csv-sample">Name,Circuit,Experimental,Bungee
