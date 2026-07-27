@@ -236,15 +236,15 @@
           <strong>Quick start</strong>
           <ol class="quick-start">
             <li>Choose Music Camp, TA, or Science.</li>
-            <li>Upload files (or click <strong>Example Files</strong>).</li>
+            <li>Upload files (or click "Example Files").</li>
             <li>Run solver, then copy or download results.</li>
           </ol>
         </div>
         <details class="collapsible-help">
-          <summary>Need CSV structure help? Open guides</summary>
+          <summary>Need help setting up?</summary>
           <nav class="category-nav" aria-label="Help topics">
             <button type="button" class="help-tab" data-panel="helpExport">Export CSV files</button>
-            <button type="button" class="help-tab" data-panel="helpClassExamples">Violin examples</button>
+            <button type="button" class="help-tab" data-panel="helpClassExamples">Music Camp examples</button>
             <button type="button" class="help-tab" data-panel="helpTaExamples">TA examples</button>
             <button type="button" class="help-tab" data-panel="helpScienceExamples">Science examples</button>
           </nav>
@@ -255,32 +255,32 @@
         <section class="card">
           <h2>1. Workflow + Files</h2>
           <div class="mode-row">
-            <label><input type="radio" name="mode" value="class" checked /> Music Camp Scheduling</label>
-            <label><input type="radio" name="mode" value="ta" /> TA Scheduling</label>
-            <label><input type="radio" name="mode" value="science" /> Science Scheduling</label>
+            <label><input type="radio" name="mode" value="class" checked /> Music Camp</label>
+            <label><input type="radio" name="mode" value="ta" /> TA</label>
+            <label><input type="radio" name="mode" value="science" /> Science</label>
           </div>
 
           <div id="classPanel">
             <p class="muted"><strong>Violin scheduling files:</strong> Students.csv, Teachers.csv, Masterclasses.csv, Group Class.csv, Orchestra.csv, and Times.csv. Open <em>Violin scheduling examples</em> above for column definitions.</p>
-            <label>Students CSV (Students.csv)<input id="studentsFile" type="file" accept=".csv" /></label>
-            <label>Teachers CSV (Teachers.csv)<input id="teachersFile" type="file" accept=".csv" /></label>
-            <label>Masterclasses CSV (Masterclasses.csv)<input id="masterclassesFile" type="file" accept=".csv" /></label>
-            <label>Group Classes CSV (Group Class.csv)<input id="groupclassesFile" type="file" accept=".csv" /></label>
-            <label>Orchestra CSV (Orchestra.csv)<input id="orchestraFile" type="file" accept=".csv" /></label>
-            <label>Times CSV (Times.csv)<input id="timesFile" type="file" accept=".csv" /></label>
+            <label>Students CSV<input id="studentsFile" type="file" accept=".csv" /></label>
+            <label>Teachers CSV<input id="teachersFile" type="file" accept=".csv" /></label>
+            <label>Masterclasses CSV<input id="masterclassesFile" type="file" accept=".csv" /></label>
+            <label>Group Classes CSV<input id="groupclassesFile" type="file" accept=".csv" /></label>
+            <label>Orchestra CSV<input id="orchestraFile" type="file" accept=".csv" /></label>
+            <label>Times CSV<input id="timesFile" type="file" accept=".csv" /></label>
           </div>
 
           <div id="taPanel" class="hidden">
             <p class="muted"><strong>TA scheduling files:</strong> Lab Schedule.csv and Availability.csv. Open <em>TA scheduling examples</em> above for column definitions.</p>
-            <label>Lab Schedule CSV (Lab Schedule.csv)<input id="labsFile" type="file" accept=".csv" /></label>
-            <label>Availability CSV (Availability.csv)<input id="availabilityFile" type="file" accept=".csv" /></label>
+            <label>Lab Schedule CSV<input id="labsFile" type="file" accept=".csv" /></label>
+            <label>Availability CSV<input id="availabilityFile" type="file" accept=".csv" /></label>
           </div>
 
           <div id="sciencePanel" class="hidden">
             <p class="muted"><strong>Science scheduling files:</strong> SciTimes.csv, A Team.csv, and B Team.csv. Open <em>Science scheduling examples</em> below for column definitions.</p>
-            <label>SciTimes CSV (SciTimes.csv)<input id="scitimesFile" type="file" accept=".csv" /></label>
-            <label>A Team CSV (A Team.csv)<input id="aTeamFile" type="file" accept=".csv" /></label>
-            <label>B Team CSV (B Team.csv)<input id="bTeamFile" type="file" accept=".csv" /></label>
+            <label>SciTimes CSV<input id="scitimesFile" type="file" accept=".csv" /></label>
+            <label>A Team CSV<input id="aTeamFile" type="file" accept=".csv" /></label>
+            <label>B Team CSV<input id="bTeamFile" type="file" accept=".csv" /></label>
           </div>
 
           <div style="margin-top: 1rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
