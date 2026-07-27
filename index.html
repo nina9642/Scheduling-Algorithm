@@ -210,6 +210,7 @@
           <button type="button" class="help-tab" data-panel="helpGenetic">How the genetic algorithm works</button>
           <button type="button" class="help-tab" data-panel="helpClassExamples">Violin scheduling examples</button>
           <button type="button" class="help-tab" data-panel="helpTaExamples">TA scheduling examples</button>
+          <button type="button" class="help-tab" data-panel="helpScienceExamples">Science scheduling examples</button>
         </nav>
       </section>
 
@@ -248,6 +249,7 @@
           <div style="margin-top: 1rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
             <button id="runButton">Run scheduling solver</button>
             <button id="loadSampleButton" type="button">Example Files</button>
+            <button id="downloadExampleFilesButton" type="button">Download Example Files</button>
           </div>
           <div id="status" class="status">Waiting for files…</div>
           <div id="progressContainer" class="progress-container hidden">
@@ -280,7 +282,7 @@
         <h2>Export CSV files from Google Sheets or Excel</h2>
         <div class="guide">
           <ol class="guide-steps">
-            <li><strong>Pick a workflow</strong> in the upload panel: Class scheduling or TA scheduling.</li>
+            <li><strong>Pick a workflow</strong> in the upload panel: Violin (Class), TA scheduling, or Science scheduling.</li>
             <li><strong>Build your spreadsheet</strong> with the correct column headers and one row per student, teacher, class, lab, or time slot.</li>
             <li><strong>Export each sheet as CSV</strong> using the steps below, then upload the files and click <em>Run scheduling solver</em>.</li>
           </ol>
@@ -324,7 +326,7 @@
           <ul style="margin-top: 1rem;">
             <li><strong>Use separate files.</strong> This app expects one CSV per category (Students, Teachers, and so on), not one workbook with every sheet combined.</li>
             <li><strong>Keep the header row.</strong> Do not delete the top row of column names.</li>
-            <li><strong>Match the example formats</strong> in the Violin scheduling or TA scheduling tabs above.</li>
+            <li><strong>Match the example formats</strong> in the Violin, TA, or Science scheduling tabs above.</li>
           </ul>
         </div>
       </section>
@@ -469,6 +471,55 @@
 003L,,x,x,,</div>
             <p class="csv-row-label">Row 1 above means: for lab <strong>001L</strong>, TAs <strong>A</strong>, <strong>C</strong>, and <strong>D</strong> are available. The empty cells between commas mean those TAs are not available.</p>
             <p class="muted" style="margin-top: 0.75rem;">The finished schedule shows the lab, the assigned TA letter, and the lab time. Example output row: <code>001L | A | 8:00 - 9:50</code>.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="helpScienceExamples" class="card help-section hidden">
+        <h2>Science scheduling example files</h2>
+        <p class="muted">Use these formats for Science scheduling. You need all three files: <code>SciTimes.csv</code>, <code>A Team.csv</code>, and <code>B Team.csv</code>.</p>
+
+        <div class="guide">
+          <div class="example-block">
+            <span class="example-title">SciTimes.csv</span>
+            <p class="muted">Event list, capacity, and time slot.</p>
+            <ul class="column-legend">
+              <li><code>Event</code> — science event name shown in the output schedule</li>
+              <li><code>Max Students</code> — maximum students allowed in that event</li>
+              <li><code>Time</code> — event time label; use <code>N/A</code> for build-only events</li>
+            </ul>
+            <div class="csv-sample">Event,Max Students,Time
+Bungee,2,N/A
+Experimental,3,8:30-9:20
+Chemistry,2,9:35-10:25</div>
+            <p class="csv-row-label">Row 1 above means: <strong>Bungee</strong> is a build event with capacity <strong>2</strong> and no fixed time slot.</p>
+          </div>
+
+          <div class="example-block">
+            <span class="example-title">A Team.csv</span>
+            <p class="muted">One row per A Team student with ranked event preferences.</p>
+            <ul class="column-legend">
+              <li><code>Name</code> — student name</li>
+              <li><code>Grade</code> — grade label</li>
+              <li>Each event column (for example <code>Experimental</code>) should be ranked <code>1</code>, <code>2</code>, or <code>3</code></li>
+            </ul>
+            <div class="csv-sample">Name,Grade,Bungee,Experimental,Chemistry
+Alex,12,1,1,3
+Sam,10,2,1,3</div>
+            <p class="csv-row-label">Row 1 above means: <strong>Alex</strong> prefers Bungee and Experimental the most, and Chemistry the least.</p>
+          </div>
+
+          <div class="example-block">
+            <span class="example-title">B Team.csv</span>
+            <p class="muted">Same format as <code>A Team.csv</code> for B Team students.</p>
+            <ul class="column-legend">
+              <li>Use the same event columns as <code>A Team.csv</code> so preferences match <code>SciTimes.csv</code></li>
+              <li>Keep rankings as <code>1</code>, <code>2</code>, or <code>3</code></li>
+            </ul>
+            <div class="csv-sample">Name,Grade,Bungee,Experimental,Chemistry
+Jordan,11,1,3,2
+Taylor,9,2,3,1</div>
+            <p class="csv-row-label">Row 1 above means: <strong>Jordan</strong> wants Bungee, would be okay with Chemistry, and Experimental the least.</p>
           </div>
         </div>
       </section>
@@ -940,6 +991,40 @@ await main()
           console.error(error);
         }
       });
+
+      document.getElementById('downloadExampleFilesButton').addEventListener('click', async () => {
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+        const fileSets = mode === 'class'
+          ? ['Students.csv', 'Teachers.csv', 'Masterclasses.csv', 'Group Class.csv', 'Orchestra.csv', 'Times.csv']
+          : mode === 'ta'
+          ? ['Lab Schedule.csv', 'Availability.csv']
+          : ['SciTimes.csv', 'A Team.csv', 'B Team.csv'];
+
+        try {
+          statusEl.textContent = `Downloading ${fileSets.length} example file${fileSets.length === 1 ? '' : 's'}…`;
+          for (const fileName of fileSets) {
+            const response = await fetch(`./${encodeURIComponent(fileName)}?t=${Date.now()}`);
+            if (!response.ok) {
+              throw new Error(`Could not download ${fileName}`);
+            }
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+            await new Promise((resolve) => setTimeout(resolve, 120));
+          }
+          statusEl.textContent = 'Example files downloaded. Check your Downloads folder.';
+        } catch (error) {
+          statusEl.textContent = 'Unable to download one or more example files.';
+          console.error(error);
+        }
+      });
+
       document.getElementById("copyButton").addEventListener("click", async () => {
           const rows = document.querySelectorAll("#resultsBody tr");
 
