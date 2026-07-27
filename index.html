@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Scheduling Algorithm Web App</title>
+    <title>Your Schedule Solving Solution!</title>
     <style>
       :root {
         color-scheme: dark;
@@ -230,12 +230,12 @@
   <body>
     <div class="container">
       <section class="hero">
-        <h1>Scheduling Algorithm Web App</h1>
-        <p class="muted">Upload CSV files, run the solver, and export your schedule in one place.</p>
+        <h1>Your Super Schedule Solving Solution!</h1>
+        <p class="muted">Built for music camp scheduling, TA scheduling, and Science Olympiad scheduling.</p>
         <div class="tip-box">
           <strong>Quick start</strong>
           <ol class="quick-start">
-            <li>Choose Violin, TA, or Science.</li>
+            <li>Choose Music Camp, TA, or Science.</li>
             <li>Upload files (or click <strong>Example Files</strong>).</li>
             <li>Run solver, then copy or download results.</li>
           </ol>
@@ -255,9 +255,9 @@
         <section class="card">
           <h2>1. Workflow + Files</h2>
           <div class="mode-row">
-            <label><input type="radio" name="mode" value="class" checked /> Class scheduling</label>
-            <label><input type="radio" name="mode" value="ta" /> TA scheduling</label>
-            <label><input type="radio" name="mode" value="science" /> Science scheduling</label>
+            <label><input type="radio" name="mode" value="class" checked /> Music Camp Scheduling</label>
+            <label><input type="radio" name="mode" value="ta" /> TA Scheduling</label>
+            <label><input type="radio" name="mode" value="science" /> Science Scheduling</label>
           </div>
 
           <div id="classPanel">
@@ -386,7 +386,7 @@
 
       <section id="helpClassExamples" class="card help-section hidden">
         <h2>Violin scheduling example files</h2>
-        <p class="muted">Use these formats for class scheduling. You need all six files. Student IDs in class files must match <code>Students.csv</code>, and teacher IDs must match <code>Teachers.csv</code>.</p>
+        <p class="muted">Use these formats for music camp scheduling. You need all six files. Student IDs in class files must match <code>Students.csv</code>, and teacher IDs must match <code>Teachers.csv</code>.</p>
 
         <div class="guide">
           <div class="example-block">
@@ -874,7 +874,7 @@ os.chdir('/tmp')
 
           if (mode === 'class') {
             showProgress('Running genetic algorithm…', 0, 0);
-            statusEl.textContent = 'Running class scheduling solver…';
+            statusEl.textContent = 'Running music camp scheduling solver…';
             await reloadPythonModule(pyodide, 'violinscheduling.py');
             const resultText = await pyodide.runPythonAsync(`
 import json
