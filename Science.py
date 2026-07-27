@@ -1,4 +1,5 @@
 import csv
+import asyncio
 import json
 import os
 import random
@@ -264,19 +265,23 @@ def bestfitness(P: List[List[Dict[str, object]]], students: List[Dict[str, objec
     return best_fit, best
 
 
-def build_schedule(events_file: str = 'SciTimes.csv', team_files: Optional[List[str]] = None) -> Tuple[List[Dict[str, object]], float, List[Dict[str, object]], List[Dict[str, object]]]:
+def build_schedule(
+    events_file: str = 'SciTimes.csv',
+    team_files: Optional[List[str]] = None,
+    population_size: int = 120,
+    max_no_improvement: int = 120,
+    max_generations: int = 5000,
+) -> Tuple[List[Dict[str, object]], float, List[Dict[str, object]], List[Dict[str, object]]]:
     if team_files is None:
         team_files = ['A Team.csv', 'B Team.csv']
     events = parse_scitimes(events_file)
     students = combine_students(team_files)
-    population = [create_individual(students, events) for _ in range(120)]
+    population = [create_individual(students, events) for _ in range(population_size)]
     best_schedule = population[0]
     best_score = fitness(best_schedule, students, events)
 
     no_improve = 0
     generation = 0
-    max_no_improvement = 120
-    max_generations = 5000
 
     while no_improve < max_no_improvement and generation < max_generations:
         generation += 1
@@ -297,6 +302,57 @@ def build_schedule(events_file: str = 'SciTimes.csv', team_files: Optional[List[
             child = crossover(parent1, parent2)
             next_population.append(mutation(child, students, events, 0.18))
         population = next_population
+
+    return best_schedule, best_score, students, events
+
+
+async def build_schedule_async(
+    events_file: str = 'SciTimes.csv',
+    team_files: Optional[List[str]] = None,
+    population_size: int = 120,
+    max_no_improvement: int = 80,
+    max_generations: int = 2000,
+    yield_interval: int = 2,
+) -> Tuple[List[Dict[str, object]], float, List[Dict[str, object]], List[Dict[str, object]]]:
+    if team_files is None:
+        team_files = ['A Team.csv', 'B Team.csv']
+    events = parse_scitimes(events_file)
+    students = combine_students(team_files)
+    population = [create_individual(students, events) for _ in range(population_size)]
+    best_schedule = population[0]
+    best_score = fitness(best_schedule, students, events)
+
+    no_improve = 0
+    generation = 0
+
+    while no_improve < max_no_improvement and generation < max_generations:
+        generation += 1
+        scores = [fitness(individual, students, events) for individual in population]
+        current_best = population[max(range(len(scores)), key=lambda i: scores[i])]
+        current_best_score = max(scores)
+        if current_best_score > best_score:
+            best_score = current_best_score
+            best_schedule = current_best
+            no_improve = 0
+        else:
+            no_improve += 1
+
+        print(f'SOLVER_PROGRESS {generation}/{max_generations} best={best_score} stagnation={no_improve}/{max_no_improvement}')
+
+        next_population = []
+        child_counter = 0
+        while len(next_population) < len(population):
+            parent1 = parent(population, 5, students, events)
+            parent2 = parent(population, 5, students, events)
+            child = crossover(parent1, parent2)
+            next_population.append(mutation(child, students, events, 0.18))
+            child_counter += 1
+            if child_counter % 24 == 0:
+                await asyncio.sleep(0)
+        population = next_population
+
+        if generation % max(1, yield_interval) == 0:
+            await asyncio.sleep(0)
 
     return best_schedule, best_score, students, events
 
@@ -324,9 +380,70 @@ def format_schedule(schedule: List[Dict[str, object]], students: List[Dict[str, 
     return rows
 
 
+def format_schedule_by_event(schedule: List[Dict[str, object]], students: List[Dict[str, object]], events: List[Dict[str, object]]) -> List[Dict[str, object]]:
+    preferred_team_order = ['A Team', 'B Team']
+    student_teams = {student['name']: student.get('team', 'Unknown Team') for student in students}
+    event_assignments: Dict[str, Dict[str, List[str]]] = {}
+
+    for assignment in schedule:
+        student_name = assignment.get('student', 'Unknown Student')
+        team_name = assignment.get('team', student_teams.get(student_name, 'Unknown Team'))
+        for event_name in assignment.get('events', []):
+            if event_name not in event_assignments:
+                event_assignments[event_name] = {}
+            if team_name not in event_assignments[event_name]:
+                event_assignments[event_name][team_name] = []
+            event_assignments[event_name][team_name].append(student_name)
+
+    rows = []
+    seen_events = set()
+
+    for event in events:
+        event_name = event['name']
+        seen_events.add(event_name)
+        team_map = event_assignments.get(event_name, {})
+        ordered_teams = [
+            *[team for team in preferred_team_order if team in team_map],
+            *[team for team in team_map.keys() if team not in preferred_team_order],
+        ]
+
+        if not ordered_teams:
+            rows.append({'event': event_name, 'time': event['time'] or 'build', 'team': '—', 'students': []})
+            continue
+
+        for index, team_name in enumerate(ordered_teams):
+            rows.append({
+                'event': event_name if index == 0 else '',
+                'time': (event['time'] or 'build') if index == 0 else '',
+                'team': team_name,
+                'students': team_map.get(team_name, []),
+            })
+
+    for event_name, team_map in event_assignments.items():
+        if event_name in seen_events:
+            continue
+        ordered_teams = [
+            *[team for team in preferred_team_order if team in team_map],
+            *[team for team in team_map.keys() if team not in preferred_team_order],
+        ]
+        if not ordered_teams:
+            rows.append({'event': event_name, 'time': 'unknown', 'team': '—', 'students': []})
+            continue
+        for index, team_name in enumerate(ordered_teams):
+            rows.append({
+                'event': event_name if index == 0 else '',
+                'time': 'unknown' if index == 0 else '',
+                'team': team_name,
+                'students': team_map.get(team_name, []),
+            })
+
+    return rows
+
+
 if __name__ == '__main__':
-    schedule, score, students, events = build_schedule()
-    rows = format_schedule(schedule, students, events)
+    schedule, score, students, events = asyncio.run(build_schedule_async())
+    rows = format_schedule_by_event(schedule, students, events)
     print(f'Score: {score:.2f}')
     for entry in rows:
-        print(entry['student'], '->', ', '.join(f"{e['name']} ({e['time']})" for e in entry['events']))
+        student_text = ', '.join(entry['students']) if entry['students'] else 'No students assigned'
+        print(entry['event'] or '...', '|', entry['time'] or '...', '|', entry['team'], '->', student_text)
