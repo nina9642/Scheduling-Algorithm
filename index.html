@@ -218,9 +218,6 @@
       .collapsible-help .category-nav {
         margin-top: 0.8rem;
       }
-      .hero-standalone-help {
-        margin-top: 0.75rem;
-      }
       @media (max-width: 800px) {
         .grid { grid-template-columns: 1fr; }
       }
@@ -252,9 +249,6 @@
             <button type="button" class="help-tab" data-panel="helpScienceExamples">Science examples</button>
           </nav>
         </details>
-        <nav class="category-nav hero-standalone-help" aria-label="Algorithm help">
-          <button type="button" class="help-tab" data-panel="helpGenetic">How the genetic algorithm works</button>
-        </nav>
       </section>
 
       <div class="grid">
@@ -374,7 +368,7 @@
         </div>
       </section>
 
-      <section id="helpGenetic" class="card help-section hidden">
+      <section id="helpGenetic" class="card help-section">
         <h2>How the genetic algorithm works</h2>
         <div class="guide">
           <p>This app uses a <strong>genetic algorithm</strong>, a search method inspired by evolution in nature. Instead of trying every possible schedule by hand, the computer creates many candidate schedules, keeps the good ones, and improves them over time.</p>
