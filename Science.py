@@ -40,26 +40,33 @@ def parse_team_file(file_path: str, team_name: Optional[str] = None) -> List[Dic
         reader = csv.DictReader(file)
         students = []
         for row in reader:
-            if not row or not row.get('Name'):
+            if not row:
                 continue
-            name = row['Name'].strip()
+            name = ''
+            for key, value in row.items():
+                if key is None:
+                    continue
+                if key.strip().lower() == 'name':
+                    name = (value or '').strip()
+                    break
+            if not name:
+                continue
             prefs = {}
             for key, value in row.items():
                 if key is None:
                     continue
                 header = key.strip()
-                if header in {'Name', 'Grade'}:
+                if header.lower() in {'name', 'grade'}:
                     continue
                 if not header:
                     continue
                 try:
-                    prefs[header] = int(value.strip())
+                    prefs[header] = int((value or '').strip())
                 except Exception:
                     prefs[header] = 3
             students.append({
                 'name': name,
                 'team': team_name,
-                'grade': row.get('Grade', '').strip(),
                 'prefs': prefs,
             })
     return students
