@@ -40,11 +40,21 @@
       }
       input[type="file"] {
         width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        display: block;
+        margin-top: 0.35rem;
         padding: 0.75rem;
         border-radius: 10px;
         background: #0c2037;
         border: 1px solid #2e638f;
         color: white;
+      }
+      #classPanel label,
+      #taPanel label,
+      #sciencePanel label {
+        display: block;
+        margin-bottom: 0.6rem;
       }
       button {
         border: none;
@@ -176,10 +186,40 @@
         margin-top: 0.45rem;
       }
       .tip-box {
-        padding: 0.9rem 1rem;
+        padding: 0.8rem 0.95rem;
         border-radius: 12px;
         background: rgba(94, 234, 212, 0.08);
         border: 1px solid rgba(94, 234, 212, 0.18);
+      }
+      .quick-start {
+        margin: 0.75rem 0 0;
+        padding-left: 1.05rem;
+        display: grid;
+        gap: 0.3rem;
+      }
+      .quick-start li {
+        color: #d8ecff;
+      }
+      .collapsible-help {
+        margin-top: 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.04);
+        padding: 0.7rem 0.85rem;
+      }
+      .collapsible-help > summary {
+        cursor: pointer;
+        font-weight: 700;
+        color: #d8ecff;
+      }
+      .collapsible-help > summary::marker {
+        color: #32c5ff;
+      }
+      .collapsible-help .category-nav {
+        margin-top: 0.8rem;
+      }
+      .hero-standalone-help {
+        margin-top: 0.75rem;
       }
       @media (max-width: 800px) {
         .grid { grid-template-columns: 1fr; }
@@ -194,29 +234,32 @@
     <div class="container">
       <section class="hero">
         <h1>Scheduling Algorithm Web App</h1>
-        <p class="muted">This page helps you use the scheduling solver from your repository without needing to write code. Follow the simple steps below to get a schedule from your CSV files.</p>
+        <p class="muted">Upload CSV files, run the solver, and export your schedule in one place.</p>
         <div class="tip-box">
-          <strong>New user quick start</strong>
-          <ol class="guide-steps">
-            <li><strong>Choose a workflow:</strong> pick Violin (Class), TA, or Science scheduling.</li>
-            <li><strong>Upload files:</strong> add the matching CSV files shown on this page.</li>
-            <li><strong>Run the solver:</strong> click <em>Run scheduling solver</em> and wait for the status message.</li>
-            <li><strong>View results:</strong> the table below shows the schedule and score.</li>
+          <strong>Quick start</strong>
+          <ol class="quick-start">
+            <li>Choose Violin, TA, or Science.</li>
+            <li>Upload files (or click <strong>Example Files</strong>).</li>
+            <li>Run solver, then copy or download results.</li>
           </ol>
-          <p class="muted" style="margin-top:0.75rem;">If you do not have your own CSVs yet, use the <strong>Example Files</strong> button to load sample data instantly.</p>
         </div>
-        <nav class="category-nav" aria-label="Help topics">
-          <button type="button" class="help-tab" data-panel="helpExport">Export CSV files</button>
+        <details class="collapsible-help">
+          <summary>Need CSV structure help? Open guides</summary>
+          <nav class="category-nav" aria-label="Help topics">
+            <button type="button" class="help-tab" data-panel="helpExport">Export CSV files</button>
+            <button type="button" class="help-tab" data-panel="helpClassExamples">Violin examples</button>
+            <button type="button" class="help-tab" data-panel="helpTaExamples">TA examples</button>
+            <button type="button" class="help-tab" data-panel="helpScienceExamples">Science examples</button>
+          </nav>
+        </details>
+        <nav class="category-nav hero-standalone-help" aria-label="Algorithm help">
           <button type="button" class="help-tab" data-panel="helpGenetic">How the genetic algorithm works</button>
-          <button type="button" class="help-tab" data-panel="helpClassExamples">Violin scheduling examples</button>
-          <button type="button" class="help-tab" data-panel="helpTaExamples">TA scheduling examples</button>
-          <button type="button" class="help-tab" data-panel="helpScienceExamples">Science scheduling examples</button>
         </nav>
       </section>
 
       <div class="grid">
         <section class="card">
-          <h2>1. Choose a workflow</h2>
+          <h2>1. Workflow + Files</h2>
           <div class="mode-row">
             <label><input type="radio" name="mode" value="class" checked /> Class scheduling</label>
             <label><input type="radio" name="mode" value="ta" /> TA scheduling</label>
@@ -247,9 +290,9 @@
           </div>
 
           <div style="margin-top: 1rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
-            <button id="runButton">Run scheduling solver</button>
+            <button id="runButton">Run Solver</button>
             <button id="loadSampleButton" type="button">Example Files</button>
-            <button id="downloadExampleFilesButton" type="button">Download Example Files</button>
+            <button id="downloadExampleFilesButton" type="button">Download Sample CSVs</button>
           </div>
           <div id="status" class="status">Waiting for files…</div>
           <div id="progressContainer" class="progress-container hidden">
@@ -262,8 +305,8 @@
         </section>
 
         <section class="card">
-          <h2>2. Output</h2>
-          <p class="muted">The solver returns a best-effort schedule with assignments and timing.</p>
+          <h2>2. Results</h2>
+          <p class="muted">Your best schedule appears here.</p>
           <div style="margin-bottom: 1rem; display: flex; gap: 0.75rem;">
             <button id="copyButton" type="button">📋 Copy Schedule</button>
             <button id="downloadButton" type="button">⬇️ Download CSV</button>
