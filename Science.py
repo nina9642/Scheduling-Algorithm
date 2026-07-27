@@ -104,6 +104,154 @@ def weighted_sample_unique(items: List[str], weights: List[int], k: int) -> List
     return chosen
 
 
+def required_team_event_count(event: Dict[str, object]) -> int:
+    # Hard rule for this scenario: never solo and never 4+ students in an event.
+    raw = int(event.get('capacity', 2))
+    return max(2, min(3, raw))
+
+
+def has_time_conflict(event_name: str, assigned_events: List[str], event_by_name: Dict[str, Dict[str, object]]) -> bool:
+    event = event_by_name.get(event_name)
+    if not event or event['is_build']:
+        return False
+    event_time = event['time']
+    for existing in assigned_events:
+        existing_event = event_by_name.get(existing)
+        if existing_event and not existing_event['is_build'] and existing_event['time'] == event_time:
+            return True
+    return False
+
+
+def repair_individual(schedule: List[Dict[str, object]], students: List[Dict[str, object]], events: List[Dict[str, object]]) -> List[Dict[str, object]]:
+    event_by_name = {event['name']: event for event in events}
+    assignment_by_student = {assignment['student']: assignment for assignment in schedule}
+    students_by_team: Dict[str, List[str]] = {}
+    student_obj_by_name = {student['name']: student for student in students}
+
+    for student in students:
+        team_name = student.get('team', 'Unknown Team')
+        if team_name not in students_by_team:
+            students_by_team[team_name] = []
+        students_by_team[team_name].append(student['name'])
+
+    # Normalize each student's event list: valid names only, unique events only, no same-time duplicates.
+    for assignment in schedule:
+        seen = set()
+        normalized: List[str] = []
+        for event_name in assignment.get('events', []):
+            if event_name not in event_by_name:
+                continue
+            if event_name in seen:
+                continue
+            if has_time_conflict(event_name, normalized, event_by_name):
+                continue
+            seen.add(event_name)
+            normalized.append(event_name)
+        assignment['events'] = normalized[:4]
+
+    team_event_members: Dict[str, Dict[str, List[str]]] = {}
+    for team_name in students_by_team:
+        team_event_members[team_name] = {event['name']: [] for event in events}
+
+    for assignment in schedule:
+        student_name = assignment['student']
+        student_obj = student_obj_by_name.get(student_name)
+        team_name = student_obj.get('team', 'Unknown Team') if student_obj else assignment.get('team', 'Unknown Team')
+        if team_name not in team_event_members:
+            team_event_members[team_name] = {event['name']: [] for event in events}
+        for event_name in assignment['events']:
+            if event_name in team_event_members[team_name]:
+                team_event_members[team_name][event_name].append(student_name)
+
+    # Remove excess students from overfull team-event buckets.
+    for team_name, event_map in team_event_members.items():
+        for event in events:
+            event_name = event['name']
+            target = required_team_event_count(event)
+            members = event_map[event_name]
+            while len(members) > target:
+                # Remove highest-cost member first: weak preference, heavier load.
+                to_remove = max(
+                    members,
+                    key=lambda student_name: (
+                        student_preference(student_obj_by_name[student_name], event_name),
+                        len(assignment_by_student[student_name]['events']),
+                    ),
+                )
+                assignment_by_student[to_remove]['events'] = [
+                    name for name in assignment_by_student[to_remove]['events'] if name != event_name
+                ]
+                members.remove(to_remove)
+
+    # Fill underfull team-event buckets, prioritizing strong preference and feasibility.
+    for team_name, team_students in students_by_team.items():
+        for event in events:
+            event_name = event['name']
+            target = required_team_event_count(event)
+            members = team_event_members[team_name][event_name]
+            while len(members) < target:
+                candidates = []
+                for student_name in team_students:
+                    assigned = assignment_by_student[student_name]['events']
+                    if event_name in assigned:
+                        continue
+                    if len(assigned) >= 4:
+                        continue
+                    conflict = has_time_conflict(event_name, assigned, event_by_name)
+                    pref = student_preference(student_obj_by_name[student_name], event_name)
+                    candidates.append((conflict, pref, len(assigned), student_name))
+
+                if not candidates:
+                    # Last-resort swap: replace a weak event for a student if team/event is still under target.
+                    swap_done = False
+                    for student_name in team_students:
+                        assigned = assignment_by_student[student_name]['events']
+                        if event_name in assigned or not assigned:
+                            continue
+                        if has_time_conflict(event_name, assigned, event_by_name):
+                            continue
+                        removable_options = sorted(
+                            assigned,
+                            key=lambda existing: student_preference(student_obj_by_name[student_name], existing),
+                            reverse=True,
+                        )
+                        for removable in removable_options:
+                            removable_members = team_event_members[team_name][removable]
+                            removable_target = required_team_event_count(event_by_name[removable])
+                            if len(removable_members) - 1 < removable_target:
+                                continue
+                            assignment_by_student[student_name]['events'] = [
+                                name for name in assigned if name != removable
+                            ] + [event_name]
+                            removable_members.remove(student_name)
+                            members.append(student_name)
+                            swap_done = True
+                            break
+                        if swap_done:
+                            break
+                    if not swap_done:
+                        break
+                    continue
+
+                candidates.sort()
+                chosen = candidates[0][3]
+                assignment_by_student[chosen]['events'].append(event_name)
+                members.append(chosen)
+
+    # Final dedupe pass per student (safety).
+    for assignment in schedule:
+        deduped = []
+        seen = set()
+        for event_name in assignment['events']:
+            if event_name in seen:
+                continue
+            seen.add(event_name)
+            deduped.append(event_name)
+        assignment['events'] = deduped
+
+    return schedule
+
+
 def create_individual(students: List[Dict[str, object]], events: List[Dict[str, object]]) -> List[Dict[str, object]]:
     timed_events = [event for event in events if not event['is_build']]
     build_events = [event for event in events if event['is_build']]
@@ -130,7 +278,7 @@ def create_individual(students: List[Dict[str, object]], events: List[Dict[str, 
             'events': timed_assigned + build_assigned,
         })
 
-    return schedule
+    return repair_individual(schedule, students, events)
 
 
 def student_preference(student: Dict[str, object], event_name: str) -> int:
@@ -140,11 +288,18 @@ def student_preference(student: Dict[str, object], event_name: str) -> int:
 def fitness(schedule: List[Dict[str, object]], students: List[Dict[str, object]], events: List[Dict[str, object]]) -> float:
     event_by_name = {event['name']: event for event in events}
     student_lookup = {student['name']: student for student in students}
+    teams = sorted({student.get('team', 'Unknown Team') for student in students})
     score = 0.0
-    capacity_counts: Dict[str, int] = {event['name']: 0 for event in events}
+    team_event_counts: Dict[str, Dict[str, int]] = {
+        team: {event['name']: 0 for event in events}
+        for team in teams
+    }
 
     for assignment in schedule:
         student = student_lookup[assignment['student']]
+        team_name = student.get('team', 'Unknown Team')
+        if team_name not in team_event_counts:
+            team_event_counts[team_name] = {event['name']: 0 for event in events}
         event_names = assignment['events']
         build_count = 0
         timed_count = 0
@@ -158,47 +313,60 @@ def fitness(schedule: List[Dict[str, object]], students: List[Dict[str, object]]
 
         for event_name in event_names:
             if event_name in seen_events:
-                score -= 100
+                score -= 5000
                 continue
             seen_events.add(event_name)
             event = event_by_name.get(event_name)
             if not event:
-                score -= 30
+                score -= 300
                 continue
-            capacity_counts[event_name] += 1
+            team_event_counts[team_name][event_name] = team_event_counts[team_name].get(event_name, 0) + 1
             pref = student_preference(student, event_name)
             if event['is_build']:
                 build_count += 1
                 if pref == 1:
-                    score += 12
+                    score += 2
                 elif pref == 2:
-                    score += 6
+                    score += 1
                 else:
-                    score -= 40
+                    score -= 3
             else:
                 timed_count += 1
                 if pref == 1:
-                    score += 10
+                    score += 2
                 elif pref == 2:
-                    score += 3
+                    score += 1
                 else:
-                    score -= 20
+                    score -= 3
                 time_label = event['time']
                 if time_label in times_seen:
-                    score -= 120
+                    score -= 5000
                 times_seen.add(time_label)
 
         if timed_count > 3:
-            score -= 80 * (timed_count - 3)
+            score -= 900 * (timed_count - 3)
         if build_count > 3:
-            score -= 150 * (build_count - 3)
+            score -= 2000 * (build_count - 3)
         if timed_count == 4 and build_count == 0:
-            score -= 40
+            score -= 1200
 
-    for event_name, count in capacity_counts.items():
-        event = event_by_name[event_name]
-        if count > event['capacity']:
-            score -= 25 * (count - event['capacity'])
+    # Hard rule: each team must have exactly the required number of students in every event.
+    # Any underfill or overfill is heavily penalized.
+    for team_name in team_event_counts:
+        for event in events:
+            event_name = event['name']
+            required = required_team_event_count(event)
+            assigned = int(team_event_counts[team_name].get(event_name, 0))
+            diff = abs(assigned - required)
+            if diff == 0:
+                score += 50
+            else:
+                score -= 12000 * diff
+
+            if assigned == 1:
+                score -= 20000
+            if assigned > 3:
+                score -= 25000 * (assigned - 3)
 
     return score
 
@@ -251,7 +419,7 @@ def mutation(child: List[Dict[str, object]], students: List[Dict[str, object]], 
                 if build_candidates and all(not event_by_name[e]['is_build'] for e in events_assigned):
                     events_assigned.append(random.choice(build_candidates))
         mutated.append({'student': assignment['student'], 'events': events_assigned})
-    return mutated
+    return repair_individual(mutated, students, events)
 
 
 def bestfitness(P: List[List[Dict[str, object]]], students: List[Dict[str, object]], events: List[Dict[str, object]]) -> Tuple[float, List[Dict[str, object]]]:
